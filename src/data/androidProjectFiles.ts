@@ -56,6 +56,18 @@ android.nonTransitiveRClass=true
 kotlin.code.style=official`
   },
   {
+    path: 'gradle/wrapper/gradle-wrapper.properties',
+    category: 'gradle',
+    description: 'Gradle distribution URL configuration (v8.10.2-bin)',
+    content: `distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\\://services.gradle.org/distributions/gradle-8.10.2-bin.zip
+networkTimeout=10000
+validateDistributionUrl=true
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists`
+  },
+  {
     path: 'gradle/libs.versions.toml',
     category: 'gradle',
     description: 'Gradle Version Catalog for AGP 8.7, Kotlin 2.0 & Compose BOM',
