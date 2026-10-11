@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MARS Launcher</string>
+    <string name="search_apps_hint">Search Martian apps &amp; commands…</string>
+    <string name="all_apps">All Applications</string>
+    <string name="favorites">Orbital Dock</string>
+    <string name="settings">System Protocol</string>
+    <string name="set_default_launcher">Set as Default Launcher</string>
+    <string name="set_default_launcher_desc">Open Android Home App settings to select MARS Launcher</string>
+    <string name="theme_intensity">MARS RED Intensity</string>
+    <string name="grid_columns">App Drawer Columns</string>
+    <string name="show_clock_seconds">Display Precise Seconds</string>
+    <string name="martian_sol_mode">Martian Sol Date Display</string>
+    <string name="hud_telemetry">Cyber HUD Telemetry</string>
+    <string name="ai_bridge_status">MARS AI Protocol</string>
+    <string name="ai_bridge_desc">Integrated neural abstraction layer for voice and semantic search</string>
+    <string name="no_apps_found">No installed applications match query.</string>
+    <string name="launch_error">Unable to launch application.</string>
+</resources>

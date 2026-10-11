@@ -1,0 +1,6 @@
+{
+  "name": "MARS Launcher",
+  "description": "Native Android Jetpack Compose HOME launcher featuring a futuristic MARS RED design, AMOLED space aesthetics, real app discovery, and future AI bridge.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

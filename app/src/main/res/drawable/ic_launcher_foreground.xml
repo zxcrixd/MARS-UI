@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- MARS Red Geometric Delta & Core -->
+    <path
+        android:fillColor="#FF2A36"
+        android:pathData="M54,26 L76,68 L64,68 L54,48 L44,68 L32,68 Z" />
+    <!-- Martian Horizon Arc -->
+    <path
+        android:strokeColor="#FF4D5A"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M30,76 Q54,84 78,76" />
+    <!-- Inner Radiant Core -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,38 L59,50 L49,50 Z" />
+</vector>

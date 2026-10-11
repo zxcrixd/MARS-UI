@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- MARS RED Color Palette -->
+    <color name="mars_black">#000000</color>
+    <color name="mars_dark_surface">#0A0A0E</color>
+    <color name="mars_card_surface">#14141A</color>
+    <color name="mars_red_primary">#FF2A36</color>
+    <color name="mars_red_variant">#D6001C</color>
+    <color name="mars_red_glow">#FF4D5A</color>
+    <color name="mars_text_primary">#FFFFFF</color>
+    <color name="mars_text_secondary">#8E929B</color>
+    <color name="mars_border_glow">#33FF2A36</color>
+</resources>
