@@ -342,6 +342,155 @@ fun HomeScreen(
 }`
   },
   {
+    path: 'app/src/main/java/com/mars/launcher/apps/AppRepository.kt',
+    category: 'kotlin',
+    description: 'Фоновое сканирование установленных приложений через PackageManager',
+    content: `package com.mars.launcher.apps
+
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
+import android.os.Build
+import com.mars.launcher.data.LauncherPreferences
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+
+class AppRepository(
+    private val context: Context,
+    private val preferences: LauncherPreferences
+) {
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val _rawApps = MutableStateFlow<List<AppInfo>>(emptyList())
+    private val _apps = MutableStateFlow<List<AppInfo>>(emptyList())
+    val apps: StateFlow<List<AppInfo>> = _apps.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    init {
+        repositoryScope.launch {
+            combine(
+                _rawApps,
+                preferences.desktopPackagesFlow,
+                preferences.dockPackagesFlow
+            ) { rawList: List<AppInfo>, desktop: Set<String>, docked: Set<String> ->
+                rawList.map { app ->
+                    app.copy(
+                        isFavorite = desktop.contains(app.packageName),
+                        isDocked = docked.contains(app.packageName)
+                    )
+                }
+            }.collect { mergedList: List<AppInfo> ->
+                _apps.value = mergedList
+            }
+        }
+    }
+
+    fun refreshApps() {
+        repositoryScope.launch {
+            _isLoading.value = true
+            try {
+                val installed = withContext(Dispatchers.IO) { queryInstalledLaunchableApps() }
+                _rawApps.value = installed
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    private fun queryInstalledLaunchableApps(): List<AppInfo> {
+        val pm = context.packageManager
+        val mainIntent = Intent(Intent.ACTION_MAIN, null).apply { addCategory(Intent.CATEGORY_LAUNCHER) }
+        val resolveInfos = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.queryIntentActivities(mainIntent, PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong()))
+        } else {
+            @Suppress("DEPRECATION")
+            pm.queryIntentActivities(mainIntent, 0)
+        }
+
+        return resolveInfos
+            .filter { it.activityInfo.packageName != context.packageName }
+            .mapNotNull { resolveInfo ->
+                try {
+                    val pkgName = resolveInfo.activityInfo.packageName
+                    val label = resolveInfo.loadLabel(pm).toString().trim()
+                    AppInfo(
+                        packageName = pkgName,
+                        activityName = resolveInfo.activityInfo.name,
+                        label = if (label.isNotEmpty()) label else pkgName,
+                        icon = resolveInfo.loadIcon(pm)
+                    )
+                } catch (_: Exception) { null }
+            }.sortedBy { it.label.lowercase() }
+    }
+
+    fun launchApp(packageName: String): Result<Unit> {
+        return try {
+            val intent = context.packageManager.getLaunchIntentForPackage(packageName)
+                ?: return Result.failure(Exception("Launch intent not found"))
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+            context.startActivity(intent)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+}`
+  },
+  {
+    path: 'app/src/main/java/com/mars/launcher/data/LauncherPreferences.kt',
+    category: 'kotlin',
+    description: 'Хранилище Jetpack DataStore для рабочего стола, дока и виджета часов',
+    content: `package com.mars.launcher.data
+
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.*
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "mars_launcher_prefs")
+
+class LauncherPreferences(private val context: Context) {
+    companion object {
+        val KEY_DESKTOP_PACKAGES = stringSetPreferencesKey("desktop_packages_set")
+        val KEY_DOCK_PACKAGES = stringSetPreferencesKey("dock_packages_set")
+        val KEY_DRAWER_COLUMNS = intPreferencesKey("drawer_columns")
+        val KEY_HOME_COLUMNS = intPreferencesKey("home_columns")
+        val KEY_ICON_SHAPE = stringPreferencesKey("icon_shape")
+        val KEY_SHOW_DOCK_SEARCH = booleanPreferencesKey("show_dock_search")
+        val KEY_SHOW_CLOCK_WIDGET = booleanPreferencesKey("show_clock_widget")
+        val KEY_AMOLED_MODE = booleanPreferencesKey("amoled_mode")
+    }
+
+    val desktopPackagesFlow: Flow<Set<String>> = context.dataStore.data.map { it[KEY_DESKTOP_PACKAGES] ?: emptySet() }
+    val favoritesFlow: Flow<Set<String>> get() = desktopPackagesFlow
+    val dockPackagesFlow: Flow<Set<String>> = context.dataStore.data.map { it[KEY_DOCK_PACKAGES] ?: emptySet() }
+    val showClockWidgetFlow: Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_CLOCK_WIDGET] ?: true }
+    val drawerColumnsFlow: Flow<Int> = context.dataStore.data.map { it[KEY_DRAWER_COLUMNS] ?: 4 }
+    val homeColumnsFlow: Flow<Int> = context.dataStore.data.map { it[KEY_HOME_COLUMNS] ?: 4 }
+    val iconShapeFlow: Flow<String> = context.dataStore.data.map { it[KEY_ICON_SHAPE] ?: "SQUIRCLE" }
+    val showDockSearchFlow: Flow<Boolean> = context.dataStore.data.map { it[KEY_SHOW_DOCK_SEARCH] ?: true }
+    val amoledModeFlow: Flow<Boolean> = context.dataStore.data.map { it[KEY_AMOLED_MODE] ?: false }
+
+    suspend fun addToDesktop(packageName: String) = context.dataStore.edit {
+        val s = (it[KEY_DESKTOP_PACKAGES] ?: emptySet()).toMutableSet()
+        s.add(packageName)
+        it[KEY_DESKTOP_PACKAGES] = s
+    }
+
+    suspend fun removeFromDesktop(packageName: String) = context.dataStore.edit {
+        val s = (it[KEY_DESKTOP_PACKAGES] ?: emptySet()).toMutableSet()
+        s.remove(packageName)
+        it[KEY_DESKTOP_PACKAGES] = s
+    }
+
+    suspend fun setShowClockWidget(show: Boolean) = context.dataStore.edit { it[KEY_SHOW_CLOCK_WIDGET] = show }
+}`
+  },
+  {
     path: 'app/src/main/java/com/mars/launcher/apps/AppDrawerScreen.kt',
     category: 'kotlin',
     description: 'Меню приложений с поиском и вызовом системных действий (One UI / Lawnchair)',

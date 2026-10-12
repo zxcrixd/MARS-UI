@@ -47,6 +47,8 @@ class LauncherPreferences(private val context: Context) {
         preferences[KEY_DESKTOP_PACKAGES] ?: DEFAULT_DESKTOP_PACKAGES
     }
 
+    val favoritesFlow: Flow<Set<String>> get() = desktopPackagesFlow
+
     val dockPackagesFlow: Flow<Set<String>> = context.dataStore.data.map { preferences ->
         preferences[KEY_DOCK_PACKAGES] ?: DEFAULT_DOCK_PACKAGES
     }
@@ -93,6 +95,19 @@ class LauncherPreferences(private val context: Context) {
             val current = preferences[KEY_DESKTOP_PACKAGES]?.toMutableSet() 
                 ?: DEFAULT_DESKTOP_PACKAGES.toMutableSet()
             current.remove(packageName)
+            preferences[KEY_DESKTOP_PACKAGES] = current
+        }
+    }
+
+    suspend fun toggleFavorite(packageName: String) {
+        context.dataStore.edit { preferences ->
+            val current = preferences[KEY_DESKTOP_PACKAGES]?.toMutableSet() 
+                ?: DEFAULT_DESKTOP_PACKAGES.toMutableSet()
+            if (current.contains(packageName)) {
+                current.remove(packageName)
+            } else {
+                current.add(packageName)
+            }
             preferences[KEY_DESKTOP_PACKAGES] = current
         }
     }

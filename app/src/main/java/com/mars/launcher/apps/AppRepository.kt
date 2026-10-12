@@ -36,20 +36,20 @@ class AppRepository(
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     init {
-        // Observe preferences and re-merge favorites & docked state
+        // Observe preferences and re-merge desktop & docked state with explicit types
         repositoryScope.launch {
             combine(
                 _rawApps,
-                preferences.favoritesFlow,
+                preferences.desktopPackagesFlow,
                 preferences.dockPackagesFlow
-            ) { rawList, favorites, docked ->
+            ) { rawList: List<AppInfo>, desktop: Set<String>, docked: Set<String> ->
                 rawList.map { app ->
                     app.copy(
-                        isFavorite = favorites.contains(app.packageName),
+                        isFavorite = desktop.contains(app.packageName),
                         isDocked = docked.contains(app.packageName)
                     )
                 }
-            }.collect { mergedList ->
+            }.collect { mergedList: List<AppInfo> ->
                 _apps.value = mergedList
             }
         }
@@ -96,7 +96,6 @@ class AppRepository(
 
         return resolveInfos
             .filter { resolveInfo ->
-                // Do not display MARS Launcher inside its own app list as a duplicate loop
                 resolveInfo.activityInfo.packageName != ourPackage
             }
             .mapNotNull { resolveInfo ->
@@ -148,7 +147,7 @@ class AppRepository(
     }
 
     /**
-     * Opens system Application Details settings for an app (e.g. from long-press).
+     * Opens system Application Details settings for an app.
      */
     fun openAppDetails(packageName: String) {
         try {
@@ -158,7 +157,6 @@ class AppRepository(
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            // Fallback to generic settings
             val intent = Intent(Settings.ACTION_SETTINGS).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
