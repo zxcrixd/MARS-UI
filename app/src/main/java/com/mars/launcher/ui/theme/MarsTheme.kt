@@ -17,36 +17,34 @@ object MarsTheme {
 }
 
 private val DarkColorScheme = darkColorScheme(
-    primary = MarsRedPrimary,
-    onPrimary = MarsTextPrimary,
-    primaryContainer = MarsRedDim,
-    onPrimaryContainer = MarsRedGlow,
-    secondary = MarsRedGlow,
-    onSecondary = MarsAmoledBlack,
-    background = MarsAmoledBlack,
-    onBackground = MarsTextPrimary,
-    surface = MarsDarkSurface,
-    onSurface = MarsTextPrimary,
-    surfaceVariant = MarsCardSurface,
-    onSurfaceVariant = MarsTextSecondary,
-    outline = MarsRedSubtleBorder
+    primary = LauncherAccent,
+    onPrimary = TextPrimaryDark,
+    primaryContainer = LauncherAccentDark,
+    onPrimaryContainer = TextPrimaryDark,
+    secondary = LauncherAccentLight,
+    onSecondary = LauncherBackgroundDark,
+    background = LauncherBackgroundDark,
+    onBackground = TextPrimaryDark,
+    surface = LauncherSurfaceDark,
+    onSurface = TextPrimaryDark,
+    surfaceVariant = LauncherCardDark,
+    onSurfaceVariant = TextSecondaryDark,
+    outline = LauncherCardElevated
 )
 
 @Composable
 fun MarsLauncherTheme(
-    intensity: String = "BALANCED",
+    isAmoled: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val palette = when (intensity) {
-        "HIGH" -> MarsColorPalette(
-            primaryRed = MarsRedGlow,
-            borderGlow = MarsRedPrimary.copy(alpha = 0.4f)
+    val palette = if (isAmoled) {
+        MarsColorPalette(
+            background = androidx.compose.ui.graphics.Color(0xFF000000),
+            surface = androidx.compose.ui.graphics.Color(0xFF0C0C0E),
+            surfaceVariant = androidx.compose.ui.graphics.Color(0xFF16161B)
         )
-        "STEALTH" -> MarsColorPalette(
-            primaryRed = MarsRedCrimson,
-            borderGlow = MarsRedSubtleBorder.copy(alpha = 0.15f)
-        )
-        else -> MarsColorPalette()
+    } else {
+        MarsColorPalette()
     }
 
     CompositionLocalProvider(LocalMarsColors provides palette) {

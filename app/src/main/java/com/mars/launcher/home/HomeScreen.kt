@@ -7,14 +7,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,7 +25,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.RocketLaunch
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
@@ -37,17 +35,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.mars.launcher.apps.AppDrawerScreen
 import com.mars.launcher.settings.SettingsScreen
 import com.mars.launcher.ui.components.MarsClock
 import com.mars.launcher.ui.components.MarsDock
 import com.mars.launcher.ui.components.MarsGridItem
-import com.mars.launcher.ui.components.MarsHudOverlay
-import com.mars.launcher.ui.components.MarsSearchBar
 import com.mars.launcher.ui.theme.MarsLauncherTheme
 import com.mars.launcher.ui.theme.MarsTheme
 
@@ -58,14 +54,12 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Handle Android system back button
+    // Android back button handling
     BackHandler(enabled = uiState.screenMode != LauncherScreenMode.DESKTOP) {
-        if (uiState.screenMode == LauncherScreenMode.SETTINGS || uiState.screenMode == LauncherScreenMode.APP_DRAWER) {
-            viewModel.setScreenMode(LauncherScreenMode.DESKTOP)
-        }
+        viewModel.setScreenMode(LauncherScreenMode.DESKTOP)
     }
 
-    MarsLauncherTheme(intensity = uiState.themeIntensity) {
+    MarsLauncherTheme(isAmoled = uiState.isAmoled) {
         Box(
             modifier = modifier
                 .fillMaxSize()
@@ -74,8 +68,11 @@ fun HomeScreen(
             AnimatedContent(
                 targetState = uiState.screenMode,
                 transitionSpec = {
-                    if (targetState == LauncherScreenMode.APP_DRAWER || targetState == LauncherScreenMode.SETTINGS) {
+                    if (targetState == LauncherScreenMode.APP_DRAWER) {
                         (slideInVertically { height -> height / 2 } + fadeIn())
+                            .togetherWith(fadeOut())
+                    } else if (targetState == LauncherScreenMode.SETTINGS) {
+                        (slideInVertically { height -> height / 3 } + fadeIn())
                             .togetherWith(fadeOut())
                     } else {
                         fadeIn().togetherWith(slideOutVertically { height -> height / 2 } + fadeOut())
@@ -111,7 +108,7 @@ fun HomeScreen(
                 }
             }
 
-            // Error banner if launch failed
+            // Error notice if launch failed
             uiState.errorMessage?.let { errorMsg ->
                 Snackbar(
                     modifier = Modifier
@@ -120,9 +117,9 @@ fun HomeScreen(
                     action = {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Dismiss",
-                            tint = MarsTheme.colors.primaryRed,
-                            modifier = Modifier.clickable { viewModel.clearError() }
+                            contentDescription = "Закрыть",
+                            tint = MarsTheme.colors.accent,
+                            modifier = Modifier.padding(8.dp)
                         )
                     },
                     containerColor = MarsTheme.colors.surfaceVariant,
@@ -135,119 +132,94 @@ fun HomeScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DesktopView(
     uiState: HomeUiState,
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
-        // Space HUD telemetry overlay
-        MarsHudOverlay(showTelemetry = uiState.showHudTelemetry)
-
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .combinedClickable(
+                onClick = {},
+                onLongClick = { viewModel.toggleDesktopContextMenu(true) }
+            )
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Digital Clock and Martian Sol Date
-            MarsClock(
-                showSeconds = uiState.showSeconds,
-                showMartianSol = uiState.martianSolMode
-            )
+            // Clean At a Glance Clock & Date (One UI / Lawnchair style)
+            MarsClock()
 
-            // Search Bar Trigger
-            MarsSearchBar(
-                query = uiState.searchQuery,
-                onQueryChange = { viewModel.onSearchQueryChanged(it) },
-                placeholderText = "SEARCH OR SCAN APPS // TAP TO EXPAND",
-                modifier = Modifier
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
-                    .clickable {
-                        viewModel.setScreenMode(LauncherScreenMode.APP_DRAWER)
-                    }
-            )
-
-            // Desktop Favorites Shelf
-            if (uiState.favoriteApps.isNotEmpty()) {
-                Text(
-                    text = "PINNED ORBITAL APPS",
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.2.sp,
-                    color = MarsTheme.colors.textSecondary,
-                    modifier = Modifier.padding(start = 22.dp, top = 8.dp, bottom = 4.dp)
-                )
-
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(uiState.gridColumns),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    items(uiState.favoriteApps, key = { it.uniqueId }) { app ->
-                        MarsGridItem(
-                            app = app,
-                            onClick = { viewModel.launchApp(app) },
-                            onLongClick = { viewModel.selectAppForOptions(app) }
-                        )
-                    }
-                }
-            } else {
-                // Empty orbital prompt encouraging user to pin apps
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .padding(horizontal = 24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MarsTheme.colors.surfaceVariant.copy(alpha = 0.5f))
-                            .border(1.dp, MarsTheme.colors.borderGlow, RoundedCornerShape(12.dp))
-                            .padding(20.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.RocketLaunch,
-                            contentDescription = null,
-                            tint = MarsTheme.colors.primaryRed,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        Text(
-                            text = "NO ORBITAL PINS YET",
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = MarsTheme.colors.textPrimary
-                        )
-                        Text(
-                            text = "Tap the app drawer below, long-press any app to pin it directly to your MARS Home Screen.",
-                            fontSize = 12.sp,
-                            color = MarsTheme.colors.textSecondary,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
+            // Desktop App Grid
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(uiState.homeColumns),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                items(uiState.desktopApps, key = { it.uniqueId }) { app ->
+                    MarsGridItem(
+                        app = app,
+                        onClick = { viewModel.launchApp(app) },
+                        onLongClick = { viewModel.selectAppForOptions(app) },
+                        iconShape = uiState.iconShape
+                    )
                 }
             }
 
-            // Bottom Navigation & Favorites Dock
+            // Bottom Dock & Search Bar (Pixel / Lawnchair / One UI style)
             MarsDock(
-                favoriteApps = uiState.favoriteApps,
-                isDrawerOpen = uiState.screenMode == LauncherScreenMode.APP_DRAWER,
-                onToggleDrawer = {
-                    viewModel.setScreenMode(LauncherScreenMode.APP_DRAWER)
-                },
-                onOpenSettings = {
-                    viewModel.setScreenMode(LauncherScreenMode.SETTINGS)
-                },
+                dockApps = uiState.dockApps,
                 onAppClick = { viewModel.launchApp(it) },
-                onAppLongClick = { viewModel.selectAppForOptions(it) }
+                onAppLongClick = { viewModel.selectAppForOptions(it) },
+                iconShape = uiState.iconShape,
+                showSearchInDock = uiState.showDockSearch,
+                onOpenSearch = { viewModel.setScreenMode(LauncherScreenMode.APP_DRAWER) }
             )
+        }
+    }
+
+    // Long press empty desktop context dialog (One UI style)
+    if (uiState.showDesktopContextMenu) {
+        Dialog(onDismissRequest = { viewModel.toggleDesktopContextMenu(false) }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MarsTheme.colors.surfaceVariant)
+                    .padding(18.dp)
+            ) {
+                Text(
+                    text = "Главный экран",
+                    fontSize = 16.sp,
+                    color = MarsTheme.colors.textPrimary,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0x18FFFFFF))
+                        .combinedClickable(onClick = {
+                            viewModel.toggleDesktopContextMenu(false)
+                            viewModel.setScreenMode(LauncherScreenMode.SETTINGS)
+                        })
+                        .padding(14.dp)
+                ) {
+                    Text(
+                        text = "Настройки лаунчера",
+                        fontSize = 14.sp,
+                        color = MarsTheme.colors.textPrimary
+                    )
+                }
+            }
         }
     }
 }

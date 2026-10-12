@@ -7,7 +7,6 @@ import android.graphics.drawable.Drawable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,10 +15,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -35,14 +32,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mars.launcher.apps.AppInfo
+import com.mars.launcher.ui.theme.IconShape
 import com.mars.launcher.ui.theme.MarsTheme
 
 fun Drawable.toSafeBitmap(): Bitmap {
     if (this is BitmapDrawable && bitmap != null) {
         return bitmap
     }
-    val width = if (intrinsicWidth > 0) intrinsicWidth else 96
-    val height = if (intrinsicHeight > 0) intrinsicHeight else 96
+    val width = if (intrinsicWidth > 0) intrinsicWidth else 128
+    val height = if (intrinsicHeight > 0) intrinsicHeight else 128
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
     setBounds(0, 0, canvas.width, canvas.height)
@@ -50,12 +48,17 @@ fun Drawable.toSafeBitmap(): Bitmap {
     return bitmap
 }
 
+/**
+ * Standard Android application icon and label, styled like One UI and Lawnchair.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MarsGridItem(
     app: AppInfo,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    iconShape: IconShape = IconShape.SQUIRCLE,
+    showLabel: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val bitmap: ImageBitmap? = remember(app.uniqueId) {
@@ -66,6 +69,12 @@ fun MarsGridItem(
         }
     }
 
+    val shape = when (iconShape) {
+        IconShape.CIRCLE -> CircleShape
+        IconShape.SQUIRCLE -> RoundedCornerShape(16.dp)
+        IconShape.ROUNDED -> RoundedCornerShape(12.dp)
+    }
+
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
@@ -73,7 +82,7 @@ fun MarsGridItem(
                 onClick = onClick,
                 onLongClick = onLongClick
             )
-            .padding(vertical = 10.dp, horizontal = 4.dp),
+            .padding(vertical = 6.dp, horizontal = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -81,69 +90,45 @@ fun MarsGridItem(
             modifier = Modifier.size(56.dp),
             contentAlignment = Alignment.Center
         ) {
-            // High-tech icon border
-            Box(
-                modifier = Modifier
-                    .size(54.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MarsTheme.colors.surfaceVariant)
-                    .border(
-                        1.dp,
-                        if (app.isFavorite) MarsTheme.colors.primaryRed else MarsTheme.colors.borderGlow,
-                        RoundedCornerShape(14.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                if (bitmap != null) {
-                    Image(
-                        bitmap = bitmap,
-                        contentDescription = app.label,
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                    )
-                } else {
-                    // Fallback high-tech glyph
-                    Text(
-                        text = app.label.take(1).uppercase(),
-                        color = MarsTheme.colors.primaryRed,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 20.sp
-                    )
-                }
-            }
-
-            // Favorite indicator badge
-            if (app.isFavorite) {
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = app.label,
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(shape)
+                )
+            } else {
+                // Clean One UI style fallback
                 Box(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .size(16.dp)
-                        .background(MarsTheme.colors.primaryRed, RoundedCornerShape(8.dp)),
+                        .size(52.dp)
+                        .clip(shape)
+                        .background(MarsTheme.colors.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = "Favorite",
-                        tint = Color.Black,
-                        modifier = Modifier.size(10.dp)
+                    Text(
+                        text = app.label.take(1).uppercase(),
+                        color = Color.White,
+                        fontFamily = FontFamily.SansSerif,
+                        fontSize = 22.sp
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
-
-        // App Label
-        Text(
-            text = app.label,
-            color = MarsTheme.colors.textPrimary,
-            fontSize = 11.sp,
-            fontFamily = FontFamily.SansSerif,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 2.dp)
-        )
+        if (showLabel) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = app.label,
+                color = MarsTheme.colors.textPrimary,
+                fontSize = 12.sp,
+                fontFamily = FontFamily.SansSerif,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+        }
     }
 }

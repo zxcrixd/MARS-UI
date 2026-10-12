@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,10 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Divider
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Switch
@@ -44,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mars.launcher.home.HomeUiState
 import com.mars.launcher.home.HomeViewModel
+import com.mars.launcher.ui.theme.IconShape
 import com.mars.launcher.ui.theme.MarsTheme
 
 @Composable
@@ -64,7 +61,7 @@ fun SettingsScreen(
             .verticalScroll(scrollState)
             .padding(bottom = 32.dp)
     ) {
-        // Header
+        // Top App Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -74,41 +71,37 @@ fun SettingsScreen(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MarsTheme.colors.primaryRed
+                    contentDescription = "Назад",
+                    tint = MarsTheme.colors.textPrimary
                 )
             }
             Text(
-                text = "SYSTEM PROTOCOL // SETTINGS",
-                fontFamily = FontFamily.Monospace,
+                text = "Настройки главного экрана",
+                fontFamily = FontFamily.SansSerif,
                 fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
-                letterSpacing = 1.2.sp,
+                fontSize = 18.sp,
                 color = MarsTheme.colors.textPrimary
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        // Card: Set Default Launcher
+        // Card: Set Default Launcher (One UI Style)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 6.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(18.dp))
                 .background(MarsTheme.colors.surfaceVariant)
-                .border(1.dp, MarsTheme.colors.primaryRed, RoundedCornerShape(12.dp))
-                .clickable {
-                    openDefaultHomeSettings(context)
-                }
-                .padding(16.dp)
+                .clickable { openDefaultHomeSettings(context) }
+                .padding(18.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Home,
                     contentDescription = null,
-                    tint = MarsTheme.colors.primaryRed,
-                    modifier = Modifier.size(28.dp)
+                    tint = MarsTheme.colors.accent,
+                    modifier = Modifier.size(26.dp)
                 )
                 Column(
                     modifier = Modifier
@@ -116,152 +109,134 @@ fun SettingsScreen(
                         .padding(horizontal = 14.dp)
                 ) {
                     Text(
-                        text = "Set as Default Home Launcher",
-                        fontWeight = FontWeight.Bold,
+                        text = "Выбрать лаунчером по умолчанию",
+                        fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp,
                         color = MarsTheme.colors.textPrimary
                     )
                     Text(
-                        text = "Tap to open Android Home App settings and choose MARS Launcher",
-                        fontSize = 12.sp,
+                        text = "Открыть настройки Android для выбора домашнего экрана",
+                        fontSize = 13.sp,
                         color = MarsTheme.colors.textSecondary
                     )
                 }
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
-                    tint = MarsTheme.colors.primaryRed
+                    tint = MarsTheme.colors.textSecondary
                 )
             }
         }
 
-        // Section: Interface Settings
-        SettingsSectionHeader(title = "INTERFACE CONFIGURATION")
+        // Section: Главный экран
+        SettingsSectionHeader(title = "ГЛАВНЫЙ ЭКРАН")
 
         SettingsSwitchRow(
-            title = "Martian Sol Date Calculation",
-            description = "Display time in Martian Sol coordinates (Chryse Planitia)",
-            checked = uiState.martianSolMode,
-            onCheckedChange = { viewModel.updateMartianSolMode(it) }
+            title = "Строка поиска в доке",
+            description = "Отображать поисковую строку внизу экрана (как в Pixel и Lawnchair)",
+            checked = uiState.showDockSearch,
+            onCheckedChange = { viewModel.updateShowDockSearch(it) }
         )
 
-        SettingsSwitchRow(
-            title = "Precise Clock Seconds",
-            description = "Real-time second tick on the AMOLED main clock",
-            checked = uiState.showSeconds,
-            onCheckedChange = { viewModel.updateShowSeconds(it) }
-        )
-
-        SettingsSwitchRow(
-            title = "Orbital HUD Telemetry",
-            description = "Draw geometric HUD brackets and coordinate telemetry",
-            checked = uiState.showHudTelemetry,
-            onCheckedChange = { viewModel.updateShowHud(it) }
-        )
-
-        // Column selector
         SettingsOptionRow(
-            title = "App Drawer Columns",
-            description = "Number of grid columns in app drawer (${uiState.gridColumns} cols)"
+            title = "Сетка главного экрана",
+            description = "Количество колонок на рабочем столе"
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(3, 4, 5).forEach { cols ->
-                    val isSelected = uiState.gridColumns == cols
+                listOf(4, 5).forEach { cols ->
+                    val isSelected = uiState.homeColumns == cols
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(if (isSelected) MarsTheme.colors.primaryRed else MarsTheme.colors.surface)
-                            .border(1.dp, MarsTheme.colors.borderGlow, RoundedCornerShape(6.dp))
-                            .clickable { viewModel.updateGridColumns(cols) }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isSelected) MarsTheme.colors.accent else MarsTheme.colors.surface)
+                            .clickable { viewModel.updateHomeColumns(cols) }
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            text = "${cols}X",
+                            text = "${cols}x5",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isSelected) androidx.compose.ui.graphics.Color.White else MarsTheme.colors.textSecondary
+                        )
+                    }
+                }
+            }
+        }
+
+        // Section: Меню приложений
+        SettingsSectionHeader(title = "МЕНЮ ПРИЛОЖЕНИЙ")
+
+        SettingsOptionRow(
+            title = "Сетка меню приложений",
+            description = "Количество колонок в списке всех приложений"
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(4, 5).forEach { cols ->
+                    val isSelected = uiState.drawerColumns == cols
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isSelected) MarsTheme.colors.accent else MarsTheme.colors.surface)
+                            .clickable { viewModel.updateDrawerColumns(cols) }
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "${cols}x",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isSelected) androidx.compose.ui.graphics.Color.White else MarsTheme.colors.textSecondary
+                        )
+                    }
+                }
+            }
+        }
+
+        // Section: Иконки и тема
+        SettingsSectionHeader(title = "ВНЕШНИЙ ВИД И ИКОНКИ")
+
+        SettingsOptionRow(
+            title = "Форма иконок",
+            description = "Стиль скругления иконок"
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf(
+                    IconShape.SQUIRCLE to "One UI",
+                    IconShape.CIRCLE to "Pixel",
+                    IconShape.ROUNDED to "Квадрат"
+                ).forEach { (shape, name) ->
+                    val isSelected = uiState.iconShape == shape
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isSelected) MarsTheme.colors.accent else MarsTheme.colors.surface)
+                            .clickable { viewModel.updateIconShape(shape) }
+                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = name,
                             fontSize = 12.sp,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isSelected) MarsTheme.colors.background else MarsTheme.colors.textPrimary
+                            fontWeight = FontWeight.Medium,
+                            color = if (isSelected) androidx.compose.ui.graphics.Color.White else MarsTheme.colors.textSecondary
                         )
                     }
                 }
             }
         }
 
-        // Theme Intensity
-        SettingsOptionRow(
-            title = "MARS RED Glow Mode",
-            description = "Accent radiation level (${uiState.themeIntensity})"
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("STEALTH", "BALANCED", "HIGH").forEach { mode ->
-                    val isSelected = uiState.themeIntensity == mode
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(if (isSelected) MarsTheme.colors.primaryRed else MarsTheme.colors.surface)
-                            .border(1.dp, MarsTheme.colors.borderGlow, RoundedCornerShape(6.dp))
-                            .clickable { viewModel.updateThemeIntensity(mode) }
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = mode,
-                            fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isSelected) MarsTheme.colors.background else MarsTheme.colors.textPrimary
-                        )
-                    }
-                }
-            }
-        }
+        SettingsSwitchRow(
+            title = "Глубокий черный (AMOLED)",
+            description = "Экономия энергии на экранах OLED/AMOLED",
+            checked = uiState.isAmoled,
+            onCheckedChange = { viewModel.updateAmoledMode(it) }
+        )
 
-        // Section: Future AI Integration
-        SettingsSectionHeader(title = "MARS AI ARCHITECTURE")
-
+        // Rescan Apps
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .clip(RoundedCornerShape(16.dp))
                 .background(MarsTheme.colors.surfaceVariant)
-                .border(1.dp, MarsTheme.colors.borderGlow, RoundedCornerShape(12.dp))
-                .padding(16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.Top) {
-                Icon(
-                    imageVector = Icons.Default.Psychology,
-                    contentDescription = null,
-                    tint = MarsTheme.colors.primaryRed,
-                    modifier = Modifier.size(24.dp)
-                )
-                Column(modifier = Modifier.padding(start = 12.dp)) {
-                    Text(
-                        text = "Neural Bridge Provider: OFFLINE LOCAL",
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MarsTheme.colors.textPrimary
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Zero remote telemetry or cloud requirements. Standalone heuristic parsing is active. Ready to plug into MARS AI via AiFeatureProvider contract.",
-                        fontSize = 12.sp,
-                        color = MarsTheme.colors.textSecondary
-                    )
-                }
-            }
-        }
-
-        // Section: Maintenance
-        SettingsSectionHeader(title = "MAINTENANCE")
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MarsTheme.colors.surfaceVariant)
-                .border(1.dp, MarsTheme.colors.borderGlow, RoundedCornerShape(12.dp))
                 .clickable { viewModel.refreshApps() }
                 .padding(16.dp)
         ) {
@@ -269,11 +244,11 @@ fun SettingsScreen(
                 Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = null,
-                    tint = MarsTheme.colors.primaryRed
+                    tint = MarsTheme.colors.accent
                 )
                 Text(
-                    text = "Force Rescan Installed Applications",
-                    fontWeight = FontWeight.SemiBold,
+                    text = "Обновить список приложений",
+                    fontWeight = FontWeight.Medium,
                     fontSize = 14.sp,
                     color = MarsTheme.colors.textPrimary,
                     modifier = Modifier.padding(start = 12.dp)
@@ -281,7 +256,7 @@ fun SettingsScreen(
             }
         }
 
-        // About MARS Launcher
+        // Footer info
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -289,14 +264,12 @@ fun SettingsScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "MARS LAUNCHER v1.0.0",
-                fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = MarsTheme.colors.primaryRed
+                text = "MARS Launcher • Версия 1.0.0",
+                fontSize = 13.sp,
+                color = MarsTheme.colors.textSecondary
             )
             Text(
-                text = "Package: com.mars.launcher • Native Jetpack Compose",
+                text = "Архитектура: Jetpack Compose • com.mars.launcher",
                 fontSize = 11.sp,
                 color = MarsTheme.colors.textTertiary,
                 modifier = Modifier.padding(top = 2.dp)
@@ -309,12 +282,12 @@ fun SettingsScreen(
 fun SettingsSectionHeader(title: String) {
     Text(
         text = title,
-        fontFamily = FontFamily.Monospace,
-        fontSize = 11.sp,
+        fontFamily = FontFamily.SansSerif,
+        fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
-        letterSpacing = 1.2.sp,
-        color = MarsTheme.colors.textTertiary,
-        modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 8.dp)
+        letterSpacing = 0.8.sp,
+        color = MarsTheme.colors.textSecondary,
+        modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 6.dp)
     )
 }
 
@@ -335,7 +308,7 @@ fun SettingsSwitchRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                fontSize = 14.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
                 color = MarsTheme.colors.textPrimary
             )
@@ -349,8 +322,8 @@ fun SettingsSwitchRow(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = MarsTheme.colors.primaryRed,
-                checkedTrackColor = MarsTheme.colors.primaryRed.copy(alpha = 0.3f),
+                checkedThumbColor = androidx.compose.ui.graphics.Color.White,
+                checkedTrackColor = MarsTheme.colors.accent,
                 uncheckedThumbColor = MarsTheme.colors.textSecondary,
                 uncheckedTrackColor = MarsTheme.colors.surfaceVariant
             )
@@ -367,13 +340,13 @@ fun SettingsOptionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                fontSize = 14.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
                 color = MarsTheme.colors.textPrimary
             )
@@ -399,12 +372,5 @@ private fun openDefaultHomeSettings(context: Context) {
     }
     try {
         context.startActivity(intent)
-    } catch (_: Exception) {
-        try {
-            val fallback = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(fallback)
-        } catch (_: Exception) {}
-    }
+    } catch (_: Exception) {}
 }

@@ -1,7 +1,6 @@
 package com.mars.launcher.apps
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,11 +19,11 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,7 +56,7 @@ fun AppDrawerScreen(
             .background(MarsTheme.colors.background)
             .statusBarsPadding()
     ) {
-        // App Drawer Header
+        // App Drawer Top Search Bar (Lawnchair / One UI style)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -67,40 +66,16 @@ fun AppDrawerScreen(
             IconButton(onClick = onCloseDrawer) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MarsTheme.colors.primaryRed
+                    contentDescription = "Назад",
+                    tint = MarsTheme.colors.textSecondary
                 )
             }
 
             MarsSearchBar(
                 query = uiState.searchQuery,
                 onQueryChange = { viewModel.onSearchQueryChanged(it) },
+                placeholderText = "Поиск приложений...",
                 modifier = Modifier.weight(1f)
-            )
-        }
-
-        // Subheader count
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "INDEXED APPS: ${uiState.filteredApps.size}",
-                fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp,
-                color = MarsTheme.colors.textSecondary
-            )
-            Text(
-                text = "GRID // ${uiState.gridColumns}X",
-                fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = MarsTheme.colors.primaryRed
             )
         }
 
@@ -113,23 +88,11 @@ fun AppDrawerScreen(
         ) {
             when {
                 uiState.isLoading -> {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator(
-                            color = MarsTheme.colors.primaryRed,
-                            modifier = Modifier.size(36.dp),
-                            strokeWidth = 3.dp
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "SCANNING FIRMWARE PACKAGES...",
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
-                            color = MarsTheme.colors.textSecondary
-                        )
-                    }
+                    CircularProgressIndicator(
+                        color = MarsTheme.colors.accent,
+                        modifier = Modifier.size(36.dp),
+                        strokeWidth = 3.dp
+                    )
                 }
                 uiState.filteredApps.isEmpty() -> {
                     Column(
@@ -138,15 +101,15 @@ fun AppDrawerScreen(
                         modifier = Modifier.padding(24.dp)
                     ) {
                         Text(
-                            text = "NO MATCHING PACKAGES",
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MarsTheme.colors.primaryRed
+                            text = "Приложения не найдены",
+                            fontFamily = FontFamily.SansSerif,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MarsTheme.colors.textPrimary
                         )
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "No applications match query '${uiState.searchQuery}'",
+                            text = "По запросу «${uiState.searchQuery}» ничего нет",
                             fontSize = 13.sp,
                             color = MarsTheme.colors.textSecondary
                         )
@@ -154,7 +117,7 @@ fun AppDrawerScreen(
                 }
                 else -> {
                     LazyVerticalGrid(
-                        columns = GridCells.Fixed(uiState.gridColumns),
+                        columns = GridCells.Fixed(uiState.drawerColumns),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
@@ -162,7 +125,8 @@ fun AppDrawerScreen(
                             MarsGridItem(
                                 app = app,
                                 onClick = { viewModel.launchApp(app) },
-                                onLongClick = { viewModel.selectAppForOptions(app) }
+                                onLongClick = { viewModel.selectAppForOptions(app) },
+                                iconShape = uiState.iconShape
                             )
                         }
                     }
@@ -171,7 +135,7 @@ fun AppDrawerScreen(
         }
     }
 
-    // Long press options dialog
+    // Native-style App Context Menu (Long-press)
     uiState.selectedAppForDialog?.let { selectedApp ->
         AppOptionsDialog(
             app = selectedApp,
@@ -198,92 +162,98 @@ fun AppOptionsDialog(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(20.dp))
                 .background(MarsTheme.colors.surfaceVariant)
-                .border(1.dp, MarsTheme.colors.borderGlow, RoundedCornerShape(16.dp))
-                .padding(20.dp)
+                .padding(18.dp)
         ) {
-            Text(
-                text = app.label,
-                fontFamily = FontFamily.SansSerif,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = MarsTheme.colors.textPrimary
-            )
-            Text(
-                text = app.packageName,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp,
-                color = MarsTheme.colors.textSecondary,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+            // App Title Header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = app.label,
+                        fontFamily = FontFamily.SansSerif,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        color = MarsTheme.colors.textPrimary
+                    )
+                    Text(
+                        text = app.packageName,
+                        fontFamily = FontFamily.SansSerif,
+                        fontSize = 12.sp,
+                        color = MarsTheme.colors.textTertiary
+                    )
+                }
+            }
 
-            // Option 1: Favorite Toggle
+            // Option: Add / Remove from Home
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .clickable { onToggleFavorite() }
-                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                    .padding(vertical = 12.dp, horizontal = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = if (app.isFavorite) Icons.Default.Star else Icons.Outlined.StarBorder,
+                    imageVector = if (app.isFavorite) Icons.Default.Remove else Icons.Default.Add,
                     contentDescription = null,
-                    tint = MarsTheme.colors.primaryRed,
+                    tint = MarsTheme.colors.textPrimary,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    text = if (app.isFavorite) "Remove from Orbital Dock" else "Pin to Orbital Dock",
+                    text = if (app.isFavorite) "Убрать с главного экрана" else "Добавить на главный экран",
                     color = MarsTheme.colors.textPrimary,
                     fontSize = 14.sp,
-                    modifier = Modifier.padding(start = 12.dp)
+                    modifier = Modifier.padding(start = 14.dp)
                 )
             }
 
-            // Option 2: App Details Info
+            // Option: App Info
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .clickable { onOpenInfo() }
-                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                    .padding(vertical = 12.dp, horizontal = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Default.Info,
                     contentDescription = null,
-                    tint = MarsTheme.colors.textSecondary,
+                    tint = MarsTheme.colors.textPrimary,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    text = "App Info / Permissions",
+                    text = "О приложении",
                     color = MarsTheme.colors.textPrimary,
                     fontSize = 14.sp,
-                    modifier = Modifier.padding(start = 12.dp)
+                    modifier = Modifier.padding(start = 14.dp)
                 )
             }
 
-            // Option 3: Uninstall
+            // Option: Uninstall
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .clickable { onUninstall() }
-                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                    .padding(vertical = 12.dp, horizontal = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = null,
-                    tint = MarsTheme.colors.primaryRed,
+                    tint = MarsTheme.colors.accent,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    text = "Uninstall Application",
-                    color = MarsTheme.colors.primaryRed,
+                    text = "Удалить",
+                    color = MarsTheme.colors.accent,
                     fontSize = 14.sp,
-                    modifier = Modifier.padding(start = 12.dp)
+                    modifier = Modifier.padding(start = 14.dp)
                 )
             }
         }

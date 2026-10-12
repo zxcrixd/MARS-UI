@@ -1,6 +1,7 @@
 package com.mars.launcher.home
 
 import com.mars.launcher.apps.AppInfo
+import com.mars.launcher.ui.theme.IconShape
 
 enum class LauncherScreenMode {
     DESKTOP,
@@ -11,15 +12,17 @@ enum class LauncherScreenMode {
 data class HomeUiState(
     val allApps: List<AppInfo> = emptyList(),
     val filteredApps: List<AppInfo> = emptyList(),
-    val favoriteApps: List<AppInfo> = emptyList(),
+    val desktopApps: List<AppInfo> = emptyList(),
+    val dockApps: List<AppInfo> = emptyList(),
     val searchQuery: String = "",
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
     val screenMode: LauncherScreenMode = LauncherScreenMode.DESKTOP,
-    val gridColumns: Int = 4,
-    val themeIntensity: String = "BALANCED",
-    val showSeconds: Boolean = true,
-    val martianSolMode: Boolean = true,
-    val showHudTelemetry: Boolean = true,
-    val selectedAppForDialog: AppInfo? = null
+    val drawerColumns: Int = 4,
+    val homeColumns: Int = 4,
+    val iconShape: IconShape = IconShape.SQUIRCLE,
+    val showDockSearch: Boolean = true,
+    val isAmoled: Boolean = false,
+    val selectedAppForDialog: AppInfo? = null,
+    val showDesktopContextMenu: Boolean = false
 )

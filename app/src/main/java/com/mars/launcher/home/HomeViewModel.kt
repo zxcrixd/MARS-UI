@@ -1,6 +1,5 @@
 package com.mars.launcher.home
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -8,7 +7,7 @@ import com.mars.launcher.apps.AppInfo
 import com.mars.launcher.apps.AppRepository
 import com.mars.launcher.data.LauncherPreferences
 import com.mars.launcher.ai.MarsAiBridge
-import com.mars.launcher.ai.MarsCommandResult
+import com.mars.launcher.ui.theme.IconShape
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +25,7 @@ class HomeViewModel(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        // Observe applications and repository loading state
+        // Observe applications
         viewModelScope.launch {
             combine(
                 appRepository.apps,
@@ -38,10 +37,14 @@ class HomeViewModel(
                 _uiState.update { current ->
                     val filtered = applySearchFilter(apps, current.searchQuery)
                     val favorites = apps.filter { it.isFavorite }
+                    val dock = if (favorites.isNotEmpty()) favorites.take(5) else apps.take(5)
+                    val desktop = if (favorites.size > 5) favorites.drop(5) else apps.take(8)
+
                     current.copy(
                         allApps = apps,
                         filteredApps = filtered,
-                        favoriteApps = favorites,
+                        desktopApps = desktop,
+                        dockApps = dock,
                         isLoading = loading,
                         errorMessage = error
                     )
@@ -49,30 +52,39 @@ class HomeViewModel(
             }
         }
 
-        // Observe user preferences
+        // Observe preferences
         viewModelScope.launch {
-            preferences.gridColumnsFlow.collect { cols ->
-                _uiState.update { it.copy(gridColumns = cols) }
+            preferences.drawerColumnsFlow.collect { cols ->
+                _uiState.update { it.copy(drawerColumns = cols) }
             }
         }
+
         viewModelScope.launch {
-            preferences.themeIntensityFlow.collect { intensity ->
-                _uiState.update { it.copy(themeIntensity = intensity) }
+            preferences.homeColumnsFlow.collect { cols ->
+                _uiState.update { it.copy(homeColumns = cols) }
             }
         }
+
         viewModelScope.launch {
-            preferences.showClockSecondsFlow.collect { show ->
-                _uiState.update { it.copy(showSeconds = show) }
+            preferences.iconShapeFlow.collect { shapeStr ->
+                val shape = try {
+                    IconShape.valueOf(shapeStr)
+                } catch (_: Exception) {
+                    IconShape.SQUIRCLE
+                }
+                _uiState.update { it.copy(iconShape = shape) }
             }
         }
+
         viewModelScope.launch {
-            preferences.martianSolModeFlow.collect { sol ->
-                _uiState.update { it.copy(martianSolMode = sol) }
+            preferences.showDockSearchFlow.collect { show ->
+                _uiState.update { it.copy(showDockSearch = show) }
             }
         }
+
         viewModelScope.launch {
-            preferences.showHudTelemetryFlow.collect { hud ->
-                _uiState.update { it.copy(showHudTelemetry = hud) }
+            preferences.amoledModeFlow.collect { amoled ->
+                _uiState.update { it.copy(isAmoled = amoled) }
             }
         }
     }
@@ -106,7 +118,7 @@ class HomeViewModel(
         val result = appRepository.launchApp(app.packageName)
         if (result.isFailure) {
             _uiState.update {
-                it.copy(errorMessage = "Could not launch ${app.label}: ${result.exceptionOrNull()?.message}")
+                it.copy(errorMessage = "Не удалось открыть ${app.label}: ${result.exceptionOrNull()?.message}")
             }
         } else {
             // Close app drawer on successful launch
@@ -141,6 +153,10 @@ class HomeViewModel(
         _uiState.update { it.copy(selectedAppForDialog = app) }
     }
 
+    fun toggleDesktopContextMenu(show: Boolean) {
+        _uiState.update { it.copy(showDesktopContextMenu = show) }
+    }
+
     fun refreshApps() {
         appRepository.refreshApps()
     }
@@ -149,25 +165,25 @@ class HomeViewModel(
         _uiState.update { it.copy(errorMessage = null) }
     }
 
-    // Preferences mutations
-    fun updateGridColumns(cols: Int) {
-        viewModelScope.launch { preferences.setGridColumns(cols) }
+    // Settings mutations
+    fun updateDrawerColumns(cols: Int) {
+        viewModelScope.launch { preferences.setDrawerColumns(cols) }
     }
 
-    fun updateThemeIntensity(intensity: String) {
-        viewModelScope.launch { preferences.setThemeIntensity(intensity) }
+    fun updateHomeColumns(cols: Int) {
+        viewModelScope.launch { preferences.setHomeColumns(cols) }
     }
 
-    fun updateShowSeconds(show: Boolean) {
-        viewModelScope.launch { preferences.setShowClockSeconds(show) }
+    fun updateIconShape(shape: IconShape) {
+        viewModelScope.launch { preferences.setIconShape(shape.name) }
     }
 
-    fun updateMartianSolMode(enabled: Boolean) {
-        viewModelScope.launch { preferences.setMartianSolMode(enabled) }
+    fun updateShowDockSearch(show: Boolean) {
+        viewModelScope.launch { preferences.setShowDockSearch(show) }
     }
 
-    fun updateShowHud(enabled: Boolean) {
-        viewModelScope.launch { preferences.setShowHudTelemetry(enabled) }
+    fun updateAmoledMode(enabled: Boolean) {
+        viewModelScope.launch { preferences.setAmoledMode(enabled) }
     }
 
     class Factory(

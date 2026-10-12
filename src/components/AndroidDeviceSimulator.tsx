@@ -1,89 +1,73 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Search, X, Grid, Settings as SettingsIcon, Star, Info, 
-  Trash2, RefreshCw, Smartphone, Radio, Compass, ArrowLeft,
-  Terminal, ShieldCheck, Flame, Bell, Check, ChevronRight,
-  ExternalLink
+  Trash2, RefreshCw, Smartphone, Radio, ArrowLeft,
+  ShieldCheck, Check, ChevronRight, Mic, Plus, Minus,
+  Layers, Palette, Sliders
 } from 'lucide-react';
 
 export interface SimulatedApp {
   id: string;
   name: string;
   packageName: string;
-  iconBg: string;
+  color: string;
   glyph: string;
-  isFavorite: boolean;
-  category: 'system' | 'tools' | 'media' | 'social';
+  isFavorite: boolean; // whether on desktop
+  isDocked: boolean;   // whether in bottom dock
 }
 
 const DEFAULT_APPS: SimulatedApp[] = [
-  { id: 'phone', name: 'Dialer Comms', packageName: 'com.android.dialer', iconBg: '#1e3a29', glyph: '📞', isFavorite: true, category: 'system' },
-  { id: 'messages', name: 'Secure Signal', packageName: 'com.mars.messages', iconBg: '#1e293b', glyph: '💬', isFavorite: true, category: 'system' },
-  { id: 'chrome', name: 'DeepWeb Browser', packageName: 'com.android.chrome', iconBg: '#312e81', glyph: '🌐', isFavorite: true, category: 'tools' },
-  { id: 'camera', name: 'Orbital Optics', packageName: 'com.android.camera2', iconBg: '#451a03', glyph: '📷', isFavorite: true, category: 'media' },
-  { id: 'maps', name: 'Mars Rover Nav', packageName: 'com.google.android.apps.maps', iconBg: '#701a75', glyph: '🗺️', isFavorite: false, category: 'tools' },
-  { id: 'terminal', name: 'Ares CLI', packageName: 'com.mars.terminal', iconBg: '#172554', glyph: '💻', isFavorite: false, category: 'tools' },
-  { id: 'gallery', name: 'Spectral Vault', packageName: 'com.android.gallery3d', iconBg: '#3b0764', glyph: '🖼️', isFavorite: false, category: 'media' },
-  { id: 'settings_sys', name: 'Android System', packageName: 'com.android.settings', iconBg: '#18181b', glyph: '⚙️', isFavorite: false, category: 'system' },
-  { id: 'spotify', name: 'Sonic Beacon', packageName: 'com.spotify.music', iconBg: '#064e3b', glyph: '🎵', isFavorite: false, category: 'media' },
-  { id: 'calculator', name: 'Delta-V Calc', packageName: 'com.android.calculator2', iconBg: '#7f1d1d', glyph: '🔢', isFavorite: false, category: 'tools' },
-  { id: 'notes', name: 'Mission Log', packageName: 'com.mars.notes', iconBg: '#365314', glyph: '📝', isFavorite: false, category: 'tools' },
-  { id: 'clock_sys', name: 'Universal Time', packageName: 'com.android.deskclock', iconBg: '#1e1b4b', glyph: '⏱️', isFavorite: false, category: 'system' }
+  { id: 'phone', name: 'Телефон', packageName: 'com.android.dialer', color: '#22c55e', glyph: '📞', isFavorite: true, isDocked: true },
+  { id: 'messages', name: 'Сообщения', packageName: 'com.android.messaging', color: '#3b82f6', glyph: '💬', isFavorite: true, isDocked: true },
+  { id: 'chrome', name: 'Браузер', packageName: 'com.android.chrome', color: '#ea580c', glyph: '🌐', isFavorite: true, isDocked: true },
+  { id: 'camera', name: 'Камера', packageName: 'com.android.camera2', color: '#dc2626', glyph: '📷', isFavorite: true, isDocked: true },
+  { id: 'gallery', name: 'Галерея', packageName: 'com.android.gallery3d', color: '#9333ea', glyph: '🖼️', isFavorite: true, isDocked: false },
+  { id: 'settings', name: 'Настройки', packageName: 'com.android.settings', color: '#64748b', glyph: '⚙️', isFavorite: true, isDocked: false },
+  { id: 'music', name: 'Музыка', packageName: 'com.spotify.music', color: '#10b981', glyph: '🎵', isFavorite: true, isDocked: false },
+  { id: 'calc', name: 'Калькулятор', packageName: 'com.android.calculator2', color: '#f59e0b', glyph: '🔢', isFavorite: true, isDocked: false },
+  { id: 'notes', name: 'Заметки', packageName: 'com.android.notes', color: '#eab308', glyph: '📝', isFavorite: false, isDocked: false },
+  { id: 'clock', name: 'Часы', packageName: 'com.android.deskclock', color: '#0ea5e9', glyph: '⏱️', isFavorite: false, isDocked: false },
+  { id: 'files', name: 'Файлы', packageName: 'com.android.documentsui', color: '#6366f1', glyph: '📁', isFavorite: false, isDocked: false },
+  { id: 'maps', name: 'Карты', packageName: 'com.google.android.apps.maps', color: '#14b8a6', glyph: '🗺️', isFavorite: false, isDocked: false }
 ];
 
-interface Props {
-  onNotify?: (msg: string) => void;
-}
-
-export const AndroidDeviceSimulator: React.FC<Props> = () => {
+export const AndroidDeviceSimulator: React.FC = () => {
   const [apps, setApps] = useState<SimulatedApp[]>(DEFAULT_APPS);
   const [searchQuery, setSearchQuery] = useState('');
   const [screenMode, setScreenMode] = useState<'desktop' | 'drawer' | 'settings'>('desktop');
   const [activeRunningApp, setActiveRunningApp] = useState<SimulatedApp | null>(null);
   const [selectedDialogApp, setSelectedDialogApp] = useState<SimulatedApp | null>(null);
+  const [showDesktopMenu, setShowDesktopMenu] = useState(false);
   
-  // Launcher Preferences State
-  const [gridCols, setGridCols] = useState<number>(4);
-  const [themeIntensity, setThemeIntensity] = useState<'STEALTH' | 'BALANCED' | 'HIGH'>('BALANCED');
-  const [showSeconds, setShowSeconds] = useState<boolean>(true);
-  const [martianSolMode, setMartianSolMode] = useState<boolean>(true);
-  const [showHud, setShowHud] = useState<boolean>(true);
+  // Customization (Lawnchair / One UI options)
+  const [iconStyle, setIconStyle] = useState<'squircle' | 'circle' | 'rounded'>('squircle');
+  const [launcherPreset, setLauncherPreset] = useState<'oneui' | 'lawnchair' | 'mts'>('oneui');
+  const [homeCols, setHomeCols] = useState<number>(4);
+  const [drawerCols, setDrawerCols] = useState<number>(4);
+  const [showDockSearch, setShowDockSearch] = useState<boolean>(true);
+  const [isAmoled, setIsAmoled] = useState<boolean>(false);
   const [isDefaultLauncherSet, setIsDefaultLauncherSet] = useState<boolean>(false);
   const [showDefaultDialog, setShowDefaultDialog] = useState<boolean>(false);
 
-  // Time & Martian Sol calculation
+  // Time & Date
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const julianDate = useMemo(() => {
-    return (currentTime.getTime() / 86400000.0) + 2440587.5;
-  }, [currentTime]);
-
-  const marsSolDate = useMemo(() => {
-    return Math.floor((julianDate - 2451549.5) / 1.027491252 + 44796.0);
-  }, [julianDate]);
-
   const formattedTime = useMemo(() => {
     const pad = (n: number) => n.toString().padStart(2, '0');
-    const h = pad(currentTime.getHours());
-    const m = pad(currentTime.getMinutes());
-    const s = pad(currentTime.getSeconds());
-    return showSeconds ? `${h}:${m}:${s}` : `${h}:${m}`;
-  }, [currentTime, showSeconds]);
+    return `${pad(currentTime.getHours())}:${pad(currentTime.getMinutes())}`;
+  }, [currentTime]);
 
   const formattedDate = useMemo(() => {
-    return currentTime.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
+    return currentTime.toLocaleDateString('ru-RU', {
+      weekday: 'long',
       day: 'numeric',
-      year: 'numeric'
-    }).toUpperCase();
+      month: 'long'
+    });
   }, [currentTime]);
 
   // Filtering
@@ -93,9 +77,8 @@ export const AndroidDeviceSimulator: React.FC<Props> = () => {
     return apps.filter(a => a.name.toLowerCase().includes(q) || a.packageName.toLowerCase().includes(q));
   }, [apps, searchQuery]);
 
-  const favoriteApps = useMemo(() => {
-    return apps.filter(a => a.isFavorite);
-  }, [apps]);
+  const desktopApps = useMemo(() => apps.filter(a => a.isFavorite && !a.isDocked), [apps]);
+  const dockApps = useMemo(() => apps.filter(a => a.isDocked).slice(0, 5), [apps]);
 
   const toggleFavorite = (appId: string) => {
     setApps(prev => prev.map(a => a.id === appId ? { ...a, isFavorite: !a.isFavorite } : a));
@@ -107,265 +90,231 @@ export const AndroidDeviceSimulator: React.FC<Props> = () => {
     setSelectedDialogApp(null);
   };
 
-  const launchApp = (app: SimulatedApp) => {
-    setActiveRunningApp(app);
+  const getIconRadius = () => {
+    switch (iconStyle) {
+      case 'circle': return 'rounded-full';
+      case 'squircle': return 'rounded-[18px]';
+      case 'rounded': return 'rounded-xl';
+    }
   };
 
-  const closeRunningApp = () => {
-    setActiveRunningApp(null);
-    setScreenMode('desktop');
+  // Preset switch
+  const applyPreset = (preset: 'oneui' | 'lawnchair' | 'mts') => {
+    setLauncherPreset(preset);
+    if (preset === 'oneui') {
+      setIconStyle('squircle');
+      setShowDockSearch(false);
+      setIsAmoled(false);
+    } else if (preset === 'lawnchair') {
+      setIconStyle('circle');
+      setShowDockSearch(true);
+      setIsAmoled(false);
+    } else if (preset === 'mts') {
+      setIconStyle('squircle');
+      setShowDockSearch(true);
+      setIsAmoled(false);
+    }
   };
-
-  // Theme styling based on intensity
-  const glowBorder = themeIntensity === 'HIGH' 
-    ? 'rgba(255, 42, 54, 0.45)' 
-    : themeIntensity === 'STEALTH' 
-    ? 'rgba(255, 42, 54, 0.15)' 
-    : 'rgba(255, 42, 54, 0.28)';
-
-  const primaryRed = themeIntensity === 'STEALTH' ? '#d6001c' : '#ff2a36';
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-center justify-center p-2 lg:p-6 select-none">
       {/* Device Body */}
-      <div className="relative w-[360px] sm:w-[390px] h-[780px] bg-black rounded-[46px] p-3 shadow-2xl border-4 border-neutral-800 ring-1 ring-red-950/40 flex flex-col overflow-hidden">
+      <div className="relative w-[360px] sm:w-[390px] h-[780px] bg-neutral-950 rounded-[48px] p-3 shadow-2xl border-4 border-neutral-800 ring-1 ring-neutral-700/50 flex flex-col overflow-hidden">
         
-        {/* Hardware Frame Elements */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-50 flex items-center justify-center">
-          {/* Front Camera */}
-          <div className="w-3.5 h-3.5 rounded-full bg-neutral-900 ring-1 ring-neutral-700/60 flex items-center justify-center">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-950/80" />
-          </div>
+        {/* Punch-hole camera */}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-black z-50 flex items-center justify-center border border-neutral-800">
+          <div className="w-1.5 h-1.5 rounded-full bg-blue-950/80" />
         </div>
 
-        {/* AMOLED Inner Screen */}
-        <div className="relative w-full h-full bg-[#000000] rounded-[36px] overflow-hidden flex flex-col font-sans text-white border border-neutral-900">
-          
-          {/* Android Status Bar */}
-          <div className="w-full h-8 pt-1 px-6 flex items-center justify-between text-[11px] font-mono text-neutral-400 z-40 bg-black/80 backdrop-blur-sm">
-            <span>{formattedTime.slice(0, 5)}</span>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-red-500 font-bold tracking-wider">MARS-5G</span>
-              <Radio className="w-3 h-3 text-red-500 animate-pulse" />
-              <div className="w-4 h-2.5 border border-neutral-400 rounded-sm p-0.5 flex items-center">
-                <div className="w-full h-full bg-red-500 rounded-[1px]" />
+        {/* Inner Phone Screen */}
+        <div 
+          className={`relative w-full h-full rounded-[38px] overflow-hidden flex flex-col font-sans text-white transition-colors duration-300 ${
+            isAmoled ? 'bg-[#000000]' : 'bg-[#121319]'
+          }`}
+          style={{
+            backgroundImage: isAmoled 
+              ? 'none' 
+              : 'radial-gradient(circle at 50% 20%, #1e2230 0%, #10121a 75%, #0d0f14 100%)'
+          }}
+        >
+          {/* Status Bar */}
+          <div className="w-full h-8 pt-1 px-6 flex items-center justify-between text-[12px] font-sans text-neutral-300 z-40 bg-transparent">
+            <span className="font-medium">{formattedTime}</span>
+            <div className="flex items-center gap-2 text-xs">
+              <span>LTE</span>
+              <Radio className="w-3.5 h-3.5" />
+              <div className="w-4 h-2.5 border border-neutral-300 rounded-[2px] p-0.5 flex items-center">
+                <div className="w-full h-full bg-white rounded-[1px]" />
               </div>
             </div>
           </div>
 
-          {/* ACTIVE RUNNING APP MODAL (Simulated Activity launch) */}
+          {/* ACTIVE RUNNING APP MODAL */}
           {activeRunningApp && (
-            <div className="absolute inset-0 z-50 bg-[#0a0a0f] flex flex-col animate-in fade-in duration-200">
-              {/* App Bar */}
-              <div className="h-14 px-4 bg-[#14141d] border-b border-red-950 flex items-center justify-between">
+            <div className="absolute inset-0 z-50 bg-[#161722] flex flex-col animate-in fade-in duration-150">
+              <div className="h-14 px-4 bg-[#20212f] border-b border-neutral-800 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-xl">{activeRunningApp.glyph}</span>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg`} style={{ backgroundColor: activeRunningApp.color }}>
+                    {activeRunningApp.glyph}
+                  </div>
                   <div>
-                    <h3 className="text-sm font-bold text-white leading-tight">{activeRunningApp.name}</h3>
-                    <p className="text-[10px] font-mono text-neutral-400">{activeRunningApp.packageName}</p>
+                    <h3 className="text-sm font-semibold text-white leading-tight">{activeRunningApp.name}</h3>
+                    <p className="text-[10px] text-neutral-400 font-mono">{activeRunningApp.packageName}</p>
                   </div>
                 </div>
                 <button 
-                  onClick={closeRunningApp}
-                  className="p-2 rounded-lg bg-red-950/40 text-red-400 hover:bg-red-900/60 transition"
-                  title="Return to MARS Home"
+                  onClick={() => setActiveRunningApp(null)}
+                  className="p-2 rounded-xl bg-neutral-800 text-neutral-300 hover:text-white"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* App Content Placeholder */}
               <div className="flex-1 p-6 flex flex-col items-center justify-center text-center">
-                <div className="w-20 h-20 rounded-2xl bg-neutral-900 border border-red-500/30 flex items-center justify-center text-4xl mb-4 shadow-lg shadow-red-950/30">
+                <div 
+                  className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mb-4 shadow-xl"
+                  style={{ backgroundColor: activeRunningApp.color }}
+                >
                   {activeRunningApp.glyph}
                 </div>
                 <h4 className="text-lg font-bold text-white mb-1">{activeRunningApp.name}</h4>
-                <p className="text-xs text-neutral-400 max-w-[260px] mb-6">
-                  Simulated native Android Activity launched with <code className="text-red-400 font-mono text-[11px]">FLAG_ACTIVITY_NEW_TASK</code>.
+                <p className="text-xs text-neutral-400 max-w-[240px] mb-6">
+                  Запущено нативное приложение через Android Intent.
                 </p>
                 <button
-                  onClick={closeRunningApp}
-                  className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-mono text-xs font-bold tracking-wider flex items-center gap-2 shadow-lg shadow-red-600/30 transition"
+                  onClick={() => setActiveRunningApp(null)}
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-2 shadow-lg transition"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  RETURN TO MARS HOME
+                  На главный экран
                 </button>
               </div>
 
-              {/* Android Navigation Bar */}
-              <div className="h-10 bg-black flex items-center justify-around text-neutral-500 border-t border-neutral-900">
-                <button onClick={closeRunningApp} className="p-2 hover:text-white transition">◀</button>
-                <button onClick={closeRunningApp} className="p-2 hover:text-white transition">●</button>
-                <button onClick={closeRunningApp} className="p-2 hover:text-white transition">■</button>
+              {/* Navigation Bar */}
+              <div className="h-10 bg-black/50 flex items-center justify-around text-neutral-400">
+                <button onClick={() => setActiveRunningApp(null)} className="p-2 hover:text-white">◀</button>
+                <button onClick={() => setActiveRunningApp(null)} className="p-2 hover:text-white">●</button>
+                <button onClick={() => setScreenMode(screenMode === 'drawer' ? 'desktop' : 'drawer')} className="p-2 hover:text-white">■</button>
               </div>
             </div>
           )}
 
-          {/* MAIN LAUNCHER VIEWPORT */}
+          {/* MAIN SCREEN VIEWPORT */}
           <div className="relative flex-1 flex flex-col overflow-hidden">
             
-            {/* HUD Telemetry Corner Brackets */}
-            {showHud && (
-              <div className="pointer-events-none absolute inset-0 z-20">
-                <div className="absolute top-2 left-3 w-5 h-5 border-t-2 border-l-2 border-red-500/30" />
-                <div className="absolute top-2 right-3 w-5 h-5 border-t-2 border-r-2 border-red-500/30" />
-                <div className="absolute bottom-16 left-3 w-5 h-5 border-b-2 border-l-2 border-red-500/30" />
-                <div className="absolute bottom-16 right-3 w-5 h-5 border-b-2 border-r-2 border-red-500/30" />
-                
-                <div className="flex justify-between px-5 text-[9px] font-mono text-neutral-500 mt-1">
-                  <span>ARES-IV // 22.4°N 49.9°W</span>
-                  <span className="text-red-500 font-bold">STATUS // NOMINAL</span>
-                </div>
-              </div>
-            )}
-
-            {/* SCREEN CONTENT */}
+            {/* DESKTOP SCREEN */}
             {screenMode === 'desktop' && (
-              <div className="flex-1 flex flex-col px-4 pt-3 pb-2 justify-between overflow-y-auto">
-                {/* Sol & Clock Section */}
-                <div className="pt-2">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="w-2 h-2 rounded-sm bg-red-600 animate-pulse" />
-                    <span className="font-mono text-[10px] font-bold tracking-widest text-red-500">
-                      {martianSolMode ? `SOL ${marsSolDate} • CHRYSE PLANITIA` : 'PLANET EARTH STATION'}
-                    </span>
-                  </div>
-
-                  <div className="text-5xl font-black tracking-tight text-white font-mono drop-shadow-[0_0_12px_rgba(255,42,54,0.3)]">
+              <div 
+                className="flex-1 flex flex-col px-4 pt-2 pb-2 justify-between overflow-y-auto"
+                onContextMenu={(e) => { e.preventDefault(); setShowDesktopMenu(true); }}
+              >
+                {/* At a Glance / One UI Clock Widget */}
+                <div className="pt-2 px-2 cursor-pointer" onClick={() => setShowDesktopMenu(true)}>
+                  <div className="text-5xl font-light tracking-tight text-white font-sans drop-shadow-sm">
                     {formattedTime}
                   </div>
-
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono text-[11px] text-neutral-400 tracking-wider">
-                      {formattedDate}
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-red-950/60 text-red-400 border border-red-800/40">
-                      SYNCED
-                    </span>
+                  <div className="text-sm font-medium text-neutral-300 capitalize mt-1 drop-shadow-sm">
+                    {formattedDate}
                   </div>
                 </div>
 
-                {/* Quick Search Bar trigger */}
-                <div 
-                  onClick={() => setScreenMode('drawer')}
-                  className="my-3 px-3.5 py-2.5 rounded-xl bg-[#13131b] border flex items-center gap-3 cursor-pointer hover:border-red-500/50 transition group shadow-inner"
-                  style={{ borderColor: glowBorder }}
-                >
-                  <Search className="w-4 h-4 text-red-500 group-hover:scale-110 transition" />
-                  <span className="text-xs font-mono text-neutral-400 tracking-wide">
-                    SEARCH PROTOCOL // APPS
-                  </span>
-                </div>
-
-                {/* Orbital Pins / Favorite Shelf */}
-                <div className="flex-1 flex flex-col justify-center">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-mono font-bold tracking-wider text-neutral-400">
-                      PINNED ORBITAL APPS ({favoriteApps.length})
-                    </span>
-                    <span className="text-[9px] font-mono text-red-500">HOLD TO MANAGE</span>
-                  </div>
-
-                  {favoriteApps.length > 0 ? (
-                    <div className="grid grid-cols-4 gap-3 py-2">
-                      {favoriteApps.map(app => (
-                        <div
-                          key={app.id}
-                          onClick={() => launchApp(app)}
-                          onContextMenu={(e) => { e.preventDefault(); setSelectedDialogApp(app); }}
-                          className="flex flex-col items-center cursor-pointer group"
-                        >
-                          <div 
-                            className="relative w-12 h-12 rounded-2xl flex items-center justify-center text-xl bg-[#14141e] border transition transform group-hover:scale-105 group-active:scale-95 shadow-md shadow-black"
-                            style={{ borderColor: glowBorder }}
-                          >
-                            <span>{app.glyph}</span>
-                            <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-600 flex items-center justify-center text-[8px] text-black font-bold">
-                              ★
-                            </div>
-                          </div>
-                          <span className="text-[10px] text-neutral-300 mt-1.5 text-center truncate max-w-[64px]">
-                            {app.name}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-4 rounded-xl border border-dashed border-red-900/40 bg-red-950/10 text-center text-xs text-neutral-400">
-                      No orbital apps pinned yet. Tap the drawer and long-press an app to pin here.
-                    </div>
-                  )}
-                </div>
-
-                {/* Bottom Orbital Floating Dock */}
-                <div className="mt-auto pt-2 pb-1">
+                {/* Desktop Apps Grid */}
+                <div className="flex-1 my-4 flex flex-col justify-start">
                   <div 
-                    className="w-full px-3 py-2 rounded-2xl bg-[#14141c]/90 backdrop-blur-md border flex items-center justify-between shadow-xl shadow-black/80"
-                    style={{ borderColor: glowBorder }}
+                    className="grid gap-y-5 gap-x-2 py-2"
+                    style={{ gridTemplateColumns: `repeat(${homeCols}, minmax(0, 1fr))` }}
                   >
-                    {/* Up to 3 quick favorite apps in dock */}
-                    <div className="flex items-center gap-2">
-                      {favoriteApps.slice(0, 3).map(app => (
-                        <button
-                          key={app.id}
-                          onClick={() => launchApp(app)}
-                          onContextMenu={(e) => { e.preventDefault(); setSelectedDialogApp(app); }}
-                          className="w-10 h-10 rounded-xl bg-[#0a0a0f] border border-red-950 flex items-center justify-center text-lg hover:border-red-500/60 transition"
-                          title={app.name}
+                    {desktopApps.map(app => (
+                      <div
+                        key={app.id}
+                        onClick={() => setActiveRunningApp(app)}
+                        onContextMenu={(e) => { e.preventDefault(); setSelectedDialogApp(app); }}
+                        className="flex flex-col items-center cursor-pointer group"
+                      >
+                        <div 
+                          className={`w-[52px] h-[52px] ${getIconRadius()} flex items-center justify-center text-2xl shadow-md transition transform group-hover:scale-105 group-active:scale-95`}
+                          style={{ backgroundColor: app.color }}
                         >
                           {app.glyph}
-                        </button>
-                      ))}
-                    </div>
+                        </div>
+                        <span className="text-[11px] text-neutral-200 mt-1.5 text-center truncate max-w-[70px] drop-shadow-sm font-normal">
+                          {app.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-                    {/* Central App Drawer Launcher */}
-                    <button
+                {/* Bottom Dock Area (Lawnchair / One UI style) */}
+                <div className="mt-auto pt-2 pb-1 space-y-2.5">
+                  {/* Dock Search Pill (Lawnchair / Pixel style) */}
+                  {showDockSearch && (
+                    <div 
                       onClick={() => setScreenMode('drawer')}
-                      className="w-11 h-11 rounded-xl bg-red-600 hover:bg-red-500 text-black flex items-center justify-center shadow-lg shadow-red-600/40 font-bold transition transform active:scale-90"
-                      title="Open App Drawer"
+                      className="w-full h-11 px-4 rounded-full bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-between cursor-pointer hover:bg-white/15 transition shadow-sm"
                     >
-                      <Grid className="w-5 h-5 text-black" />
-                    </button>
+                      <div className="flex items-center gap-2.5 text-neutral-300 text-xs">
+                        <Search className="w-4 h-4 text-neutral-300" />
+                        <span>Поиск приложений...</span>
+                      </div>
+                      <Mic className="w-4 h-4 text-neutral-300" />
+                    </div>
+                  )}
 
-                    {/* Quick Settings Action */}
-                    <button
-                      onClick={() => setScreenMode('settings')}
-                      className="w-10 h-10 rounded-xl bg-[#0a0a0f] border border-red-950 flex items-center justify-center text-neutral-400 hover:text-red-400 hover:border-red-500/60 transition"
-                      title="Launcher Protocol Settings"
+                  {/* Dock Apps Bar */}
+                  <div className="w-full px-3 py-2 rounded-3xl bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-around shadow-lg">
+                    {dockApps.map(app => (
+                      <div
+                        key={app.id}
+                        onClick={() => setActiveRunningApp(app)}
+                        onContextMenu={(e) => { e.preventDefault(); setSelectedDialogApp(app); }}
+                        className={`w-11 h-11 ${getIconRadius()} flex items-center justify-center text-xl cursor-pointer hover:scale-105 active:scale-95 transition shadow-sm`}
+                        style={{ backgroundColor: app.color }}
+                        title={app.name}
+                      >
+                        {app.glyph}
+                      </div>
+                    ))}
+                    
+                    {/* App drawer toggle button */}
+                    <div
+                      onClick={() => setScreenMode('drawer')}
+                      className="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center text-white cursor-pointer hover:bg-white/20 active:scale-95 transition"
+                      title="Меню приложений"
                     >
-                      <SettingsIcon className="w-4 h-4" />
-                    </button>
+                      <Grid className="w-5 h-5 text-neutral-200" />
+                    </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* APP DRAWER SCREEN */}
+            {/* APP DRAWER SCREEN (One UI & Lawnchair style) */}
             {screenMode === 'drawer' && (
-              <div className="flex-1 flex flex-col px-4 pt-3 pb-2 bg-black overflow-hidden animate-in slide-in-from-bottom-8 duration-200">
-                {/* Drawer Header & Real Search Input */}
+              <div className="flex-1 flex flex-col px-4 pt-2 pb-2 bg-[#0d0e14]/95 backdrop-blur-xl animate-in slide-in-from-bottom-6 duration-200">
+                {/* Search Bar Top */}
                 <div className="flex items-center gap-2 mb-3">
                   <button
                     onClick={() => { setSearchQuery(''); setScreenMode('desktop'); }}
-                    className="p-2 rounded-xl bg-neutral-900 text-red-500 hover:bg-neutral-800 transition"
+                    className="p-2 rounded-full hover:bg-white/10 text-neutral-300"
                   >
-                    <ArrowLeft className="w-4 h-4" />
+                    <ArrowLeft className="w-5 h-5" />
                   </button>
 
                   <div className="flex-1 relative flex items-center">
-                    <Search className="absolute left-3 w-4 h-4 text-red-500" />
+                    <Search className="absolute left-3.5 w-4 h-4 text-neutral-400" />
                     <input
                       type="text"
                       autoFocus
-                      placeholder="SEARCH FIRMWARE PACKAGES…"
+                      placeholder="Поиск приложений..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-[#13131b] border border-red-900/50 rounded-xl pl-9 pr-8 py-2 text-xs font-mono text-white placeholder-neutral-500 focus:outline-none focus:border-red-500"
+                      className="w-full bg-white/10 border border-white/10 rounded-full pl-10 pr-9 py-2 text-xs text-white placeholder-neutral-400 focus:outline-none focus:bg-white/15"
                     />
                     {searchQuery && (
                       <button 
                         onClick={() => setSearchQuery('')}
-                        className="absolute right-2.5 p-1 text-neutral-400 hover:text-white"
+                        className="absolute right-3 p-1 text-neutral-400 hover:text-white"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -373,38 +322,33 @@ export const AndroidDeviceSimulator: React.FC<Props> = () => {
                   </div>
                 </div>
 
-                {/* Sub-bar stats */}
-                <div className="flex justify-between items-center text-[10px] font-mono text-neutral-400 px-1 mb-2">
-                  <span>INDEXED: {filteredApps.length} PACKAGES</span>
-                  <span className="text-red-500 font-bold">{gridCols}X GRID LAYOUT</span>
+                {/* Subtitle count */}
+                <div className="flex justify-between items-center text-[11px] text-neutral-400 px-2 mb-2 font-medium">
+                  <span>Все приложения ({filteredApps.length})</span>
+                  <span>Сетка {drawerCols}x</span>
                 </div>
 
-                {/* App Grid */}
+                {/* Drawer Grid */}
                 <div className="flex-1 overflow-y-auto pr-1">
                   {filteredApps.length > 0 ? (
                     <div 
-                      className="grid gap-3 py-2"
-                      style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}
+                      className="grid gap-y-5 gap-x-2 py-2"
+                      style={{ gridTemplateColumns: `repeat(${drawerCols}, minmax(0, 1fr))` }}
                     >
                       {filteredApps.map(app => (
                         <div
                           key={app.id}
-                          onClick={() => launchApp(app)}
+                          onClick={() => setActiveRunningApp(app)}
                           onContextMenu={(e) => { e.preventDefault(); setSelectedDialogApp(app); }}
-                          className="flex flex-col items-center p-1.5 rounded-xl hover:bg-neutral-900/50 cursor-pointer group transition"
+                          className="flex flex-col items-center p-1.5 rounded-2xl hover:bg-white/5 cursor-pointer group transition"
                         >
                           <div 
-                            className="relative w-12 h-12 rounded-2xl flex items-center justify-center text-xl bg-[#14141e] border transition transform group-hover:scale-105 group-active:scale-95 shadow-md shadow-black"
-                            style={{ borderColor: app.isFavorite ? primaryRed : glowBorder }}
+                            className={`w-[50px] h-[50px] ${getIconRadius()} flex items-center justify-center text-2xl shadow-md transition transform group-hover:scale-105 group-active:scale-95`}
+                            style={{ backgroundColor: app.color }}
                           >
-                            <span>{app.glyph}</span>
-                            {app.isFavorite && (
-                              <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-600 flex items-center justify-center text-[8px] text-black font-bold">
-                                ★
-                              </div>
-                            )}
+                            {app.glyph}
                           </div>
-                          <span className="text-[10px] text-neutral-300 mt-1.5 text-center truncate w-full px-1">
+                          <span className="text-[11px] text-neutral-200 mt-1.5 text-center truncate w-full px-1">
                             {app.name}
                           </span>
                         </div>
@@ -412,9 +356,8 @@ export const AndroidDeviceSimulator: React.FC<Props> = () => {
                     </div>
                   ) : (
                     <div className="h-48 flex flex-col items-center justify-center text-center p-4">
-                      <Terminal className="w-8 h-8 text-red-500 mb-2 opacity-60" />
-                      <p className="text-xs font-mono text-red-400 font-bold">NO MATCHING PACKAGES</p>
-                      <p className="text-[11px] text-neutral-500 mt-1">No apps match &quot;{searchQuery}&quot;</p>
+                      <p className="text-sm text-neutral-300 font-medium">Ничего не найдено</p>
+                      <p className="text-xs text-neutral-500 mt-1">По запросу «{searchQuery}» приложений нет</p>
                     </div>
                   )}
                 </div>
@@ -422,241 +365,269 @@ export const AndroidDeviceSimulator: React.FC<Props> = () => {
                 {/* Close Drawer Button */}
                 <button
                   onClick={() => { setSearchQuery(''); setScreenMode('desktop'); }}
-                  className="w-full py-2.5 mt-2 rounded-xl bg-[#111118] border border-red-950 text-neutral-400 hover:text-white font-mono text-xs tracking-wider flex items-center justify-center gap-2"
+                  className="w-full py-2.5 mt-2 rounded-2xl bg-white/10 hover:bg-white/15 text-neutral-300 text-xs font-medium"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5 text-red-500" />
-                  RETURN TO HOME
+                  Закрыть меню
                 </button>
               </div>
             )}
 
-            {/* SETTINGS PROTOCOL SCREEN */}
+            {/* SETTINGS SCREEN */}
             {screenMode === 'settings' && (
-              <div className="flex-1 flex flex-col px-4 pt-3 pb-2 bg-black overflow-y-auto animate-in slide-in-from-right-8 duration-200">
-                {/* Header */}
+              <div className="flex-1 flex flex-col px-4 pt-2 pb-2 bg-[#12131a] overflow-y-auto animate-in slide-in-from-right-6 duration-200">
                 <div className="flex items-center gap-2 mb-3">
                   <button
                     onClick={() => setScreenMode('desktop')}
-                    className="p-2 rounded-xl bg-neutral-900 text-red-500 hover:bg-neutral-800 transition"
+                    className="p-2 rounded-full hover:bg-white/10 text-neutral-300"
                   >
-                    <ArrowLeft className="w-4 h-4" />
+                    <ArrowLeft className="w-5 h-5" />
                   </button>
-                  <h3 className="text-xs font-mono font-bold tracking-wider text-white">
-                    SYSTEM PROTOCOL // SETTINGS
+                  <h3 className="text-sm font-semibold text-white">
+                    Настройки главного экрана
                   </h3>
                 </div>
 
-                {/* Default Launcher Banner */}
+                {/* Default Launcher Action Banner */}
                 <div 
                   onClick={() => setShowDefaultDialog(true)}
-                  className="p-3 mb-4 rounded-xl bg-red-950/20 border border-red-600/50 flex items-center gap-3 cursor-pointer hover:bg-red-950/30 transition shadow-lg shadow-red-950/20"
+                  className="p-3.5 mb-4 rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center gap-3 cursor-pointer hover:bg-blue-600/30 transition"
                 >
-                  <ShieldCheck className="w-6 h-6 text-red-500 shrink-0" />
+                  <ShieldCheck className="w-6 h-6 text-blue-400 shrink-0" />
                   <div className="flex-1">
-                    <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                      Set as Default Launcher
+                    <h4 className="text-xs font-semibold text-white flex items-center gap-1.5">
+                      Лаунчер по умолчанию
                       {isDefaultLauncherSet && <Check className="w-3.5 h-3.5 text-green-400" />}
                     </h4>
-                    <p className="text-[10px] text-neutral-400 leading-tight">
-                      {isDefaultLauncherSet ? 'MARS Launcher is your primary home screen' : 'Fires Android ACTION_HOME_SETTINGS'}
+                    <p className="text-[10px] text-neutral-400">
+                      {isDefaultLauncherSet ? 'Выбран основным домашним экраном' : 'Нажмите для перехода в настройки Android'}
                     </p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-red-500" />
+                  <ChevronRight className="w-4 h-4 text-blue-400" />
                 </div>
 
-                {/* Settings Options */}
+                {/* Settings list */}
                 <div className="space-y-3 pb-4">
-                  <div className="text-[9px] font-mono font-bold text-neutral-500 tracking-wider">
-                    DISPLAY & THEME
+                  <div className="text-[11px] font-semibold text-neutral-400 px-1">
+                    СЕТКА И МАКЕТ
                   </div>
 
-                  {/* Martian Sol Mode Toggle */}
-                  <div className="p-2.5 rounded-xl bg-[#101017] border border-neutral-800 flex items-center justify-between">
+                  {/* Home Grid */}
+                  <div className="p-3 rounded-2xl bg-white/5 flex items-center justify-between">
                     <div>
-                      <div className="text-xs font-medium text-white">Martian Sol Date Calculation</div>
-                      <div className="text-[10px] text-neutral-400">Compute true MSD for Chryse Planitia</div>
+                      <div className="text-xs font-medium text-white">Сетка рабочего стола</div>
+                      <div className="text-[10px] text-neutral-400">{homeCols}x5 колонок</div>
                     </div>
-                    <input 
-                      type="checkbox"
-                      checked={martianSolMode}
-                      onChange={(e) => setMartianSolMode(e.target.checked)}
-                      className="accent-red-600 w-4 h-4 cursor-pointer"
-                    />
-                  </div>
-
-                  {/* Precise Seconds Toggle */}
-                  <div className="p-2.5 rounded-xl bg-[#101017] border border-neutral-800 flex items-center justify-between">
-                    <div>
-                      <div className="text-xs font-medium text-white">Precise Clock Seconds</div>
-                      <div className="text-[10px] text-neutral-400">Real-time ticker on AMOLED clock</div>
-                    </div>
-                    <input 
-                      type="checkbox"
-                      checked={showSeconds}
-                      onChange={(e) => setShowSeconds(e.target.checked)}
-                      className="accent-red-600 w-4 h-4 cursor-pointer"
-                    />
-                  </div>
-
-                  {/* HUD Telemetry Toggle */}
-                  <div className="p-2.5 rounded-xl bg-[#101017] border border-neutral-800 flex items-center justify-between">
-                    <div>
-                      <div className="text-xs font-medium text-white">Orbital HUD Telemetry</div>
-                      <div className="text-[10px] text-neutral-400">Cyber brackets and coordinates</div>
-                    </div>
-                    <input 
-                      type="checkbox"
-                      checked={showHud}
-                      onChange={(e) => setShowHud(e.target.checked)}
-                      className="accent-red-600 w-4 h-4 cursor-pointer"
-                    />
-                  </div>
-
-                  {/* Drawer Columns */}
-                  <div className="p-2.5 rounded-xl bg-[#101017] border border-neutral-800 flex items-center justify-between">
-                    <div>
-                      <div className="text-xs font-medium text-white">App Drawer Columns</div>
-                      <div className="text-[10px] text-neutral-400">{gridCols} columns per row</div>
-                    </div>
-                    <div className="flex gap-1">
-                      {[3, 4, 5].map(cols => (
+                    <div className="flex gap-1.5">
+                      {[4, 5].map(cols => (
                         <button
                           key={cols}
-                          onClick={() => setGridCols(cols)}
-                          className={`px-2 py-1 text-[10px] font-mono rounded font-bold transition ${gridCols === cols ? 'bg-red-600 text-black' : 'bg-neutral-800 text-neutral-300'}`}
+                          onClick={() => setHomeCols(cols)}
+                          className={`px-2.5 py-1 text-xs rounded-lg font-medium transition ${homeCols === cols ? 'bg-blue-600 text-white' : 'bg-white/10 text-neutral-300'}`}
                         >
-                          {cols}X
+                          {cols}x5
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Glow Mode */}
-                  <div className="p-2.5 rounded-xl bg-[#101017] border border-neutral-800 flex items-center justify-between">
+                  {/* Drawer Grid */}
+                  <div className="p-3 rounded-2xl bg-white/5 flex items-center justify-between">
                     <div>
-                      <div className="text-xs font-medium text-white">MARS RED Glow Mode</div>
-                      <div className="text-[10px] text-neutral-400">{themeIntensity} radiation level</div>
+                      <div className="text-xs font-medium text-white">Сетка меню приложений</div>
+                      <div className="text-[10px] text-neutral-400">{drawerCols} колонки в ряду</div>
                     </div>
-                    <div className="flex gap-1">
-                      {(['STEALTH', 'BALANCED', 'HIGH'] as const).map(mode => (
+                    <div className="flex gap-1.5">
+                      {[4, 5].map(cols => (
                         <button
-                          key={mode}
-                          onClick={() => setThemeIntensity(mode)}
-                          className={`px-1.5 py-1 text-[9px] font-mono rounded font-bold transition ${themeIntensity === mode ? 'bg-red-600 text-black' : 'bg-neutral-800 text-neutral-300'}`}
+                          key={cols}
+                          onClick={() => setDrawerCols(cols)}
+                          className={`px-2.5 py-1 text-xs rounded-lg font-medium transition ${drawerCols === cols ? 'bg-blue-600 text-white' : 'bg-white/10 text-neutral-300'}`}
                         >
-                          {mode[0]}
+                          {cols}x
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  <div className="text-[9px] font-mono font-bold text-neutral-500 tracking-wider pt-2">
-                    MARS AI ARCHITECTURE
+                  {/* Dock Search Toggle */}
+                  <div className="p-3 rounded-2xl bg-white/5 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-medium text-white">Строка поиска в доке</div>
+                      <div className="text-[10px] text-neutral-400">Стиль Lawnchair / Pixel</div>
+                    </div>
+                    <input 
+                      type="checkbox"
+                      checked={showDockSearch}
+                      onChange={(e) => setShowDockSearch(e.target.checked)}
+                      className="accent-blue-600 w-4 h-4 cursor-pointer"
+                    />
                   </div>
 
-                  <div className="p-3 rounded-xl bg-[#101017] border border-neutral-800">
-                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-red-500 mb-1">
-                      <Flame className="w-3.5 h-3.5" />
-                      Neural Bridge: OFFLINE LOCAL
+                  <div className="text-[11px] font-semibold text-neutral-400 px-1 pt-1">
+                    СТИЛЬ ИКОНОК
+                  </div>
+
+                  {/* Icon Shape */}
+                  <div className="p-3 rounded-2xl bg-white/5 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-medium text-white">Форма иконок</div>
+                      <div className="text-[10px] text-neutral-400">One UI / Pixel стиль</div>
                     </div>
-                    <p className="text-[10px] text-neutral-400 leading-relaxed">
-                      Zero cloud requirement or telemetry. Interface <code className="text-red-400">AiFeatureProvider</code> is ready for future MARS AI application hooks.
-                    </p>
+                    <div className="flex gap-1.5">
+                      {[
+                        { id: 'squircle', label: 'One UI' },
+                        { id: 'circle', label: 'Круг' },
+                        { id: 'rounded', label: 'Квадрат' }
+                      ].map(s => (
+                        <button
+                          key={s.id}
+                          onClick={() => setIconStyle(s.id as any)}
+                          className={`px-2.5 py-1 text-[11px] rounded-lg font-medium transition ${iconStyle === s.id ? 'bg-blue-600 text-white' : 'bg-white/10 text-neutral-300'}`}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* AMOLED */}
+                  <div className="p-3 rounded-2xl bg-white/5 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-medium text-white">AMOLED черный фон</div>
+                      <div className="text-[10px] text-neutral-400">Глубокий черный цвет</div>
+                    </div>
+                    <input 
+                      type="checkbox"
+                      checked={isAmoled}
+                      onChange={(e) => setIsAmoled(e.target.checked)}
+                      className="accent-blue-600 w-4 h-4 cursor-pointer"
+                    />
                   </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* APP CONTEXT DIALOG (Long press simulation) */}
+          {/* APP CONTEXT DIALOG (One UI long press popup) */}
           {selectedDialogApp && (
-            <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-              <div 
-                className="w-full bg-[#12121b] border rounded-2xl p-4 shadow-2xl space-y-3"
-                style={{ borderColor: glowBorder }}
-              >
-                <div className="flex items-center gap-3 pb-2 border-b border-neutral-800">
-                  <span className="text-2xl">{selectedDialogApp.glyph}</span>
+            <div className="absolute inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-5 animate-in fade-in">
+              <div className="w-full bg-[#1e202c] border border-white/10 rounded-3xl p-4 shadow-2xl space-y-2">
+                <div className="flex items-center gap-3 pb-3 border-b border-white/10">
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl" style={{ backgroundColor: selectedDialogApp.color }}>
+                    {selectedDialogApp.glyph}
+                  </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white">{selectedDialogApp.name}</h4>
-                    <p className="text-[10px] font-mono text-neutral-400">{selectedDialogApp.packageName}</p>
+                    <h4 className="text-sm font-semibold text-white">{selectedDialogApp.name}</h4>
+                    <p className="text-[11px] text-neutral-400">{selectedDialogApp.packageName}</p>
                   </div>
                 </div>
 
                 <button
                   onClick={() => toggleFavorite(selectedDialogApp.id)}
-                  className="w-full py-2 px-3 rounded-xl bg-[#1a1a26] hover:bg-neutral-800 text-white text-xs flex items-center gap-2.5 transition"
+                  className="w-full py-2.5 px-3 rounded-xl hover:bg-white/10 text-white text-xs flex items-center gap-3 transition"
                 >
-                  <Star className={`w-4 h-4 ${selectedDialogApp.isFavorite ? 'text-red-500 fill-red-500' : 'text-neutral-400'}`} />
-                  <span>{selectedDialogApp.isFavorite ? 'Remove from Orbital Dock' : 'Pin to Orbital Dock'}</span>
+                  {selectedDialogApp.isFavorite ? <Minus className="w-4 h-4 text-neutral-400" /> : <Plus className="w-4 h-4 text-blue-400" />}
+                  <span>{selectedDialogApp.isFavorite ? 'Убрать с главного экрана' : 'Добавить на главный экран'}</span>
                 </button>
 
                 <button
                   onClick={() => {
-                    alert(`Package Details:\nID: ${selectedDialogApp.packageName}\nTarget: android.intent.action.MAIN\nCategory: android.intent.category.LAUNCHER`);
+                    alert(`Информация о приложении:\nПакет: ${selectedDialogApp.packageName}\nActivity: android.intent.action.MAIN`);
                     setSelectedDialogApp(null);
                   }}
-                  className="w-full py-2 px-3 rounded-xl bg-[#1a1a26] hover:bg-neutral-800 text-white text-xs flex items-center gap-2.5 transition"
+                  className="w-full py-2.5 px-3 rounded-xl hover:bg-white/10 text-white text-xs flex items-center gap-3 transition"
                 >
                   <Info className="w-4 h-4 text-neutral-400" />
-                  <span>Application Details & Permissions</span>
+                  <span>О приложении</span>
                 </button>
 
                 <button
                   onClick={() => uninstallApp(selectedDialogApp.id)}
-                  className="w-full py-2 px-3 rounded-xl bg-red-950/40 hover:bg-red-900/40 text-red-400 text-xs flex items-center gap-2.5 transition"
+                  className="w-full py-2.5 px-3 rounded-xl hover:bg-red-500/20 text-red-400 text-xs flex items-center gap-3 transition"
                 >
-                  <Trash2 className="w-4 h-4 text-red-500" />
-                  <span>Simulate Uninstall Application</span>
+                  <Trash2 className="w-4 h-4 text-red-400" />
+                  <span>Удалить</span>
                 </button>
 
                 <button
                   onClick={() => setSelectedDialogApp(null)}
-                  className="w-full py-1.5 text-center text-xs text-neutral-400 hover:text-white"
+                  className="w-full py-2 text-center text-xs text-neutral-400 hover:text-white pt-2 border-t border-white/10"
                 >
-                  Dismiss
+                  Отмена
                 </button>
               </div>
             </div>
           )}
 
-          {/* DEFAULT LAUNCHER SIMULATION DIALOG */}
+          {/* DESKTOP CONTEXT MENU (Long press empty space) */}
+          {showDesktopMenu && (
+            <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end p-4 animate-in fade-in">
+              <div className="w-full bg-[#1c1e29] rounded-3xl p-4 shadow-2xl space-y-2 border border-white/10">
+                <h4 className="text-xs font-semibold text-neutral-400 px-2 pb-1">Главный экран</h4>
+                
+                <button
+                  onClick={() => { setShowDesktopMenu(false); setScreenMode('settings'); }}
+                  className="w-full py-3 px-3 rounded-2xl bg-white/5 hover:bg-white/10 text-white text-xs flex items-center gap-3 transition font-medium"
+                >
+                  <SettingsIcon className="w-4 h-4 text-blue-400" />
+                  <span>Настройки лаунчера</span>
+                </button>
+
+                <button
+                  onClick={() => { setShowDesktopMenu(false); setScreenMode('drawer'); }}
+                  className="w-full py-3 px-3 rounded-2xl bg-white/5 hover:bg-white/10 text-white text-xs flex items-center gap-3 transition font-medium"
+                >
+                  <Grid className="w-4 h-4 text-blue-400" />
+                  <span>Все приложения</span>
+                </button>
+
+                <button
+                  onClick={() => setShowDesktopMenu(false)}
+                  className="w-full py-2 text-center text-xs text-neutral-400 hover:text-white"
+                >
+                  Закрыть
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* DEFAULT LAUNCHER SYSTEM DIALOG */}
           {showDefaultDialog && (
-            <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="w-full bg-[#14141e] border border-red-500/60 rounded-2xl p-5 text-center space-y-3 shadow-2xl">
-                <ShieldCheck className="w-10 h-10 text-red-500 mx-auto" />
-                <h4 className="text-sm font-bold text-white">Select Default Home App</h4>
+            <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-5">
+              <div className="w-full bg-[#181a24] border border-blue-500/50 rounded-3xl p-5 text-center space-y-3 shadow-2xl">
+                <ShieldCheck className="w-10 h-10 text-blue-400 mx-auto" />
+                <h4 className="text-sm font-bold text-white">Выбор основного лаунчера</h4>
                 <p className="text-xs text-neutral-300 leading-relaxed">
-                  Android system triggers <code className="text-red-400 font-mono text-[11px]">Settings.ACTION_HOME_SETTINGS</code> allowing the user to select MARS Launcher as default home screen.
+                  Android открывает окно <code className="text-blue-300 font-mono text-[11px]">Settings.ACTION_HOME_SETTINGS</code>.
                 </p>
-                <div className="p-3 bg-black rounded-xl border border-neutral-800 text-left space-y-2">
+                <div className="p-3 bg-black/40 rounded-2xl border border-white/10 text-left space-y-2">
                   <div 
                     onClick={() => { setIsDefaultLauncherSet(true); setShowDefaultDialog(false); }}
-                    className="flex items-center justify-between p-2 rounded-lg bg-red-950/40 border border-red-600/60 cursor-pointer hover:bg-red-900/50"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-blue-600/30 border border-blue-500 cursor-pointer hover:bg-blue-600/40"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-red-500 font-bold">🚀</span>
-                      <span className="text-xs font-bold text-white">MARS Launcher</span>
+                      <span className="text-blue-400 font-bold">🏠</span>
+                      <span className="text-xs font-semibold text-white">MARS Launcher</span>
                     </div>
-                    <span className="text-[10px] font-mono text-red-400">SET DEFAULT</span>
+                    <span className="text-[10px] text-blue-300 font-medium">ВЫБРАТЬ</span>
                   </div>
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-neutral-900 text-neutral-500 opacity-60">
-                    <span className="text-xs">Quickstep / Pixel Launcher</span>
-                    <span className="text-[10px] font-mono">SYSTEM</span>
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 text-neutral-400">
+                    <span className="text-xs">One UI Home / Quickstep</span>
+                    <span className="text-[10px]">СИСТЕМНЫЙ</span>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowDefaultDialog(false)}
-                  className="w-full py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-300 font-medium"
+                  className="w-full py-2.5 rounded-xl bg-white/10 text-xs text-neutral-300 hover:text-white"
                 >
-                  Close
+                  Закрыть
                 </button>
               </div>
             </div>
           )}
 
-          {/* Android Bottom Navigation Bar */}
-          <div className="w-full h-8 bg-black flex items-center justify-around text-neutral-600 text-xs border-t border-neutral-900">
+          {/* Android Navigation Bar */}
+          <div className="w-full h-8 bg-black/40 flex items-center justify-around text-neutral-400 text-xs">
             <button 
               onClick={() => {
                 if (screenMode !== 'desktop') setScreenMode('desktop');
@@ -685,74 +656,98 @@ export const AndroidDeviceSimulator: React.FC<Props> = () => {
         </div>
       </div>
 
-      {/* Simulator Control Panel (Right Side on Desktop) */}
-      <div className="max-w-md w-full bg-[#0d0d13] border border-neutral-800 rounded-2xl p-6 shadow-xl space-y-5">
+      {/* Simulator Control & Style Preset Panel */}
+      <div className="max-w-md w-full bg-[#10121a] border border-neutral-800 rounded-3xl p-6 shadow-xl space-y-5">
         <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
           <div className="flex items-center gap-2.5">
-            <Smartphone className="w-5 h-5 text-red-500" />
-            <h3 className="text-sm font-bold text-white tracking-wide">MARS Launcher Live Simulator</h3>
+            <Smartphone className="w-5 h-5 text-blue-500" />
+            <h3 className="text-sm font-bold text-white tracking-wide">Симулятор лаунчера</h3>
           </div>
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-red-950/60 text-red-400 border border-red-800/40">
-            Jetpack Compose 1:1
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-950/80 text-blue-400 border border-blue-800/40">
+            Jetpack Compose
           </span>
         </div>
 
-        <p className="text-xs text-neutral-400 leading-relaxed">
-          Interact with the live AMOLED device to test the real-time Sol clock ticker, search bar, orbital dock pinning, app drawer scrolling, and theme intensity modes.
-        </p>
+        {/* Style Presets */}
+        <div>
+          <label className="text-xs font-semibold text-neutral-300 mb-2 flex items-center gap-1.5">
+            <Palette className="w-3.5 h-3.5 text-blue-400" />
+            Стиль оформления:
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { id: 'oneui', name: 'One UI', desc: 'Samsung стиль' },
+              { id: 'lawnchair', name: 'Lawnchair', desc: 'Чистый Android' },
+              { id: 'mts', name: 'МТС / Яндекс', desc: 'Поисковый док' }
+            ].map(p => (
+              <button
+                key={p.id}
+                onClick={() => applyPreset(p.id as any)}
+                className={`p-2.5 rounded-2xl border text-left transition ${
+                  launcherPreset === p.id 
+                    ? 'bg-blue-600/20 border-blue-500 text-white shadow-md' 
+                    : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                <div className="text-xs font-bold leading-tight">{p.name}</div>
+                <div className="text-[10px] text-neutral-400 mt-0.5">{p.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
 
-        {/* Quick Simulation Actions */}
+        {/* Quick Simulator Controls */}
         <div className="grid grid-cols-2 gap-2 text-xs">
           <button
             onClick={() => setScreenMode('drawer')}
-            className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 flex items-center gap-2 transition"
+            className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-200 flex items-center gap-2 transition"
           >
-            <Grid className="w-4 h-4 text-red-500" />
-            <span>Open App Drawer</span>
+            <Grid className="w-4 h-4 text-blue-400" />
+            <span>Меню приложений</span>
           </button>
           <button
             onClick={() => setScreenMode('settings')}
-            className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 flex items-center gap-2 transition"
+            className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-200 flex items-center gap-2 transition"
           >
-            <SettingsIcon className="w-4 h-4 text-red-500" />
-            <span>Open Protocol Settings</span>
+            <SettingsIcon className="w-4 h-4 text-blue-400" />
+            <span>Настройки лаунчера</span>
           </button>
           <button
             onClick={() => setShowDefaultDialog(true)}
-            className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 flex items-center gap-2 transition"
+            className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-200 flex items-center gap-2 transition"
           >
-            <ShieldCheck className="w-4 h-4 text-red-500" />
-            <span>Test Default Picker</span>
+            <ShieldCheck className="w-4 h-4 text-blue-400" />
+            <span>Выбор по умолчанию</span>
           </button>
           <button
             onClick={() => setApps(DEFAULT_APPS)}
-            className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 flex items-center gap-2 transition"
+            className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-200 flex items-center gap-2 transition"
           >
-            <RefreshCw className="w-4 h-4 text-red-500" />
-            <span>Reset App State</span>
+            <RefreshCw className="w-4 h-4 text-blue-400" />
+            <span>Сбросить иконки</span>
           </button>
         </div>
 
-        {/* Real Android Spec Highlights */}
-        <div className="p-3.5 rounded-xl bg-[#12121a] border border-neutral-800/80 space-y-2 text-xs">
-          <div className="font-mono text-[10px] font-bold text-red-400 tracking-wider">
-            NATIVE ANDROID INTEGRATION SPECS
+        {/* Specs summary */}
+        <div className="p-3.5 rounded-2xl bg-neutral-900/70 border border-neutral-800/80 space-y-2 text-xs">
+          <div className="font-semibold text-neutral-300 text-xs">
+            Характеристики сборки Android:
           </div>
           <div className="flex justify-between text-neutral-400 text-[11px]">
-            <span>Package Name:</span>
-            <span className="font-mono text-white">com.mars.launcher</span>
+            <span>Тип лаунчера:</span>
+            <span className="text-white font-medium">Стандартный домашний экран (HOME)</span>
           </div>
           <div className="flex justify-between text-neutral-400 text-[11px]">
-            <span>Home Intent Filters:</span>
-            <span className="font-mono text-emerald-400">MAIN, HOME, DEFAULT</span>
+            <span>Поиск пакетов:</span>
+            <span className="text-blue-400 font-mono">PackageManager (Android 11-15)</span>
           </div>
           <div className="flex justify-between text-neutral-400 text-[11px]">
-            <span>Package Queries:</span>
-            <span className="font-mono text-blue-400">Android 11+ Least-Privileged</span>
+            <span>Хранилище настроек:</span>
+            <span className="text-white font-medium">Jetpack DataStore</span>
           </div>
           <div className="flex justify-between text-neutral-400 text-[11px]">
-            <span>Target / Min SDK:</span>
-            <span className="font-mono text-white">Android 15 (35) / Android 8.0 (26)</span>
+            <span>GitHub Actions APK:</span>
+            <span className="text-emerald-400 font-mono">.github/workflows/build.yml</span>
           </div>
         </div>
       </div>

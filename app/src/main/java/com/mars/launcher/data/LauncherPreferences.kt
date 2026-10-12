@@ -18,40 +18,40 @@ class LauncherPreferences(private val context: Context) {
 
     companion object {
         val KEY_FAVORITES = stringSetPreferencesKey("favorites_set")
-        val KEY_GRID_COLUMNS = intPreferencesKey("grid_columns")
-        val KEY_THEME_INTENSITY = stringPreferencesKey("mars_theme_intensity")
-        val KEY_SHOW_SECONDS = booleanPreferencesKey("show_clock_seconds")
-        val KEY_MARTIAN_SOL_MODE = booleanPreferencesKey("martian_sol_mode")
-        val KEY_SHOW_HUD = booleanPreferencesKey("show_hud_telemetry")
         val KEY_DOCK_PACKAGES = stringSetPreferencesKey("dock_packages_set")
+        val KEY_DRAWER_COLUMNS = intPreferencesKey("drawer_columns")
+        val KEY_HOME_COLUMNS = intPreferencesKey("home_columns")
+        val KEY_ICON_SHAPE = stringPreferencesKey("icon_shape")
+        val KEY_SHOW_DOCK_SEARCH = booleanPreferencesKey("show_dock_search")
+        val KEY_AMOLED_MODE = booleanPreferencesKey("amoled_mode")
     }
 
     val favoritesFlow: Flow<Set<String>> = context.dataStore.data.map { preferences ->
         preferences[KEY_FAVORITES] ?: emptySet()
     }
 
-    val gridColumnsFlow: Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[KEY_GRID_COLUMNS] ?: 4
-    }
-
-    val themeIntensityFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[KEY_THEME_INTENSITY] ?: "BALANCED"
-    }
-
-    val showClockSecondsFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[KEY_SHOW_SECONDS] ?: true
-    }
-
-    val martianSolModeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[KEY_MARTIAN_SOL_MODE] ?: true
-    }
-
-    val showHudTelemetryFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[KEY_SHOW_HUD] ?: true
-    }
-
     val dockPackagesFlow: Flow<Set<String>> = context.dataStore.data.map { preferences ->
         preferences[KEY_DOCK_PACKAGES] ?: emptySet()
+    }
+
+    val drawerColumnsFlow: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[KEY_DRAWER_COLUMNS] ?: 4
+    }
+
+    val homeColumnsFlow: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[KEY_HOME_COLUMNS] ?: 4
+    }
+
+    val iconShapeFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[KEY_ICON_SHAPE] ?: "SQUIRCLE"
+    }
+
+    val showDockSearchFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_SHOW_DOCK_SEARCH] ?: true
+    }
+
+    val amoledModeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_AMOLED_MODE] ?: false
     }
 
     suspend fun toggleFavorite(packageName: String) {
@@ -66,39 +66,33 @@ class LauncherPreferences(private val context: Context) {
         }
     }
 
-    suspend fun setGridColumns(columns: Int) {
+    suspend fun setDrawerColumns(columns: Int) {
         context.dataStore.edit { preferences ->
-            preferences[KEY_GRID_COLUMNS] = columns.coerceIn(3, 6)
+            preferences[KEY_DRAWER_COLUMNS] = columns.coerceIn(3, 5)
         }
     }
 
-    suspend fun setThemeIntensity(intensity: String) {
+    suspend fun setHomeColumns(columns: Int) {
         context.dataStore.edit { preferences ->
-            preferences[KEY_THEME_INTENSITY] = intensity
+            preferences[KEY_HOME_COLUMNS] = columns.coerceIn(3, 5)
         }
     }
 
-    suspend fun setShowClockSeconds(show: Boolean) {
+    suspend fun setIconShape(shape: String) {
         context.dataStore.edit { preferences ->
-            preferences[KEY_SHOW_SECONDS] = show
+            preferences[KEY_ICON_SHAPE] = shape
         }
     }
 
-    suspend fun setMartianSolMode(enabled: Boolean) {
+    suspend fun setShowDockSearch(show: Boolean) {
         context.dataStore.edit { preferences ->
-            preferences[KEY_MARTIAN_SOL_MODE] = enabled
+            preferences[KEY_SHOW_DOCK_SEARCH] = show
         }
     }
 
-    suspend fun setShowHudTelemetry(show: Boolean) {
+    suspend fun setAmoledMode(enabled: Boolean) {
         context.dataStore.edit { preferences ->
-            preferences[KEY_SHOW_HUD] = show
-        }
-    }
-
-    suspend fun setDockPackages(packages: Set<String>) {
-        context.dataStore.edit { preferences ->
-            preferences[KEY_DOCK_PACKAGES] = packages
+            preferences[KEY_AMOLED_MODE] = enabled
         }
     }
 }

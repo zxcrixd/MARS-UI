@@ -1,100 +1,79 @@
 package com.mars.launcher.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.mars.launcher.apps.AppInfo
-import com.mars.launcher.ui.theme.MarsTheme
+import com.mars.launcher.ui.theme.IconShape
 
+/**
+ * Standard Android favorites dock at the bottom of the home screen (One UI / Lawnchair style).
+ */
 @Composable
 fun MarsDock(
-    favoriteApps: List<AppInfo>,
-    isDrawerOpen: Boolean,
-    onToggleDrawer: () -> Unit,
-    onOpenSettings: () -> Unit,
+    dockApps: List<AppInfo>,
     onAppClick: (AppInfo) -> Unit,
     onAppLongClick: (AppInfo) -> Unit,
+    iconShape: IconShape = IconShape.SQUIRCLE,
+    showSearchInDock: Boolean = true,
+    searchQuery: String = "",
+    onOpenSearch: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    Box(
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Futuristic floating dock bar
-        Row(
+        // Optional Dock Search Pill (Lawnchair / Pixel style)
+        if (showSearchInDock) {
+            MarsSearchBar(
+                query = searchQuery,
+                onQueryChange = { onOpenSearch() },
+                modifier = Modifier
+                    .padding(bottom = 12.dp)
+            )
+        }
+
+        // Clean Translucent Dock Bar (One UI blur style)
+        Box(
             modifier = Modifier
+                .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
-                .background(MarsTheme.colors.surfaceVariant.copy(alpha = 0.95f))
-                .border(1.dp, MarsTheme.colors.borderGlow, RoundedCornerShape(24.dp))
-                .padding(horizontal = 14.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .background(Color(0x18FFFFFF))
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center
         ) {
-            // Pinned favorite apps (up to 4)
-            favoriteApps.take(4).forEach { app ->
-                MarsGridItem(
-                    app = app,
-                    onClick = { onAppClick(app) },
-                    onLongClick = { onAppLongClick(app) },
-                    modifier = Modifier.size(52.dp)
-                )
-            }
-
-            // Central Drawer Trigger Button
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(if (isDrawerOpen) MarsTheme.colors.primaryRed else MarsTheme.colors.surface)
-                    .border(1.dp, MarsTheme.colors.primaryRed, RoundedCornerShape(14.dp))
-                    .clickable { onToggleDrawer() },
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Apps,
-                    contentDescription = "App Drawer",
-                    tint = if (isDrawerOpen) MarsTheme.colors.background else MarsTheme.colors.primaryRed,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            // Quick Settings Access Button
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MarsTheme.colors.surface)
-                    .border(1.dp, MarsTheme.colors.borderGlow, RoundedCornerShape(14.dp))
-                    .clickable { onOpenSettings() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings",
-                    tint = MarsTheme.colors.textSecondary,
-                    modifier = Modifier.size(20.dp)
-                )
+                dockApps.take(5).forEach { app ->
+                    MarsGridItem(
+                        app = app,
+                        onClick = { onAppClick(app) },
+                        onLongClick = { onAppLongClick(app) },
+                        iconShape = iconShape,
+                        showLabel = false, // Clean dock without text labels
+                        modifier = Modifier.size(56.dp)
+                    )
+                }
             }
         }
     }
