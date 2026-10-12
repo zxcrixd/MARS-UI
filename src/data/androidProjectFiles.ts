@@ -447,6 +447,70 @@ fun SettingsScreen(
 }`
   },
   {
+    path: 'app/src/main/java/com/mars/launcher/ui/components/MarsSearchBar.kt',
+    category: 'kotlin',
+    description: 'Строка поиска Lawnchair с прямой интеграцией super-mars.ai.studio',
+    content: `package com.mars.launcher.ui.components
+
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.mars.launcher.ui.theme.MarsTheme
+
+@Composable
+fun MarsSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    // Lawnchair pill search bar with direct super-mars.ai.studio integration
+}`
+  },
+  {
+    path: 'app/src/main/java/com/mars/launcher/ui/components/MarsClock.kt',
+    category: 'kotlin',
+    description: 'Виджет времени и даты At-a-Glance с поддержкой удаления по долгому нажатию',
+    content: `package com.mars.launcher.ui.components
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import com.mars.launcher.ui.theme.MarsTheme
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun MarsClock(
+    onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    // Clock & Date widget with long-press removal
+}`
+  },
+  {
     path: 'app/src/main/java/com/mars/launcher/ui/theme/MarsColors.kt',
     category: 'kotlin',
     description: 'Цветовая палитра Material 3 / One UI и определение формы иконок',

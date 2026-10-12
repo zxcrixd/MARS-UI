@@ -2,6 +2,7 @@ package com.mars.launcher.settings
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,8 +22,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -76,7 +80,7 @@ fun SettingsScreen(
                 )
             }
             Text(
-                text = "Настройки главного экрана",
+                text = "Настройки MARS Launcher",
                 fontFamily = FontFamily.SansSerif,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
@@ -84,9 +88,9 @@ fun SettingsScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        // Card: Set Default Launcher (One UI Style)
+        // Card: Set Default Launcher
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -116,7 +120,7 @@ fun SettingsScreen(
                     )
                     Text(
                         text = "Открыть настройки Android для выбора домашнего экрана",
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         color = MarsTheme.colors.textSecondary
                     )
                 }
@@ -128,18 +132,77 @@ fun SettingsScreen(
             }
         }
 
-        // Section: Главный экран
-        SettingsSectionHeader(title = "ГЛАВНЫЙ ЭКРАН")
+        // Section: MARS AI Integration (super-mars.ai.studio)
+        SettingsSectionHeader(title = "ИНТЕГРАЦИЯ MARS AI")
 
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 6.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(Color(0x22E53935))
+                .clickable {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://super-mars.ai.studio")).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    try { context.startActivity(intent) } catch (_: Exception) {}
+                }
+                .padding(18.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = MarsTheme.colors.accent,
+                    modifier = Modifier.size(26.dp)
+                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 14.dp)
+                ) {
+                    Text(
+                        text = "super-mars.ai.studio",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = MarsTheme.colors.textPrimary
+                    )
+                    Text(
+                        text = "Подключен к поисковой строке лаунчера для быстрых AI запросов",
+                        fontSize = 12.sp,
+                        color = MarsTheme.colors.textSecondary
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Default.OpenInNew,
+                    contentDescription = null,
+                    tint = MarsTheme.colors.accent
+                )
+            }
+        }
+
+        // Section: Главный экран
+        SettingsSectionHeader(title = "ГЛАВНЫЙ ЭКРАН И ВИДЖЕТЫ")
+
+        // Clock Widget Toggle
         SettingsSwitchRow(
-            title = "Строка поиска в доке",
-            description = "Отображать поисковую строку внизу экрана (как в Pixel и Lawnchair)",
+            title = "Виджет часов и даты",
+            description = "Отображать дату и время на рабочем столе (At a Glance)",
+            checked = uiState.showClockWidget,
+            onCheckedChange = { viewModel.setShowClockWidget(it) }
+        )
+
+        // Search Bar Toggle
+        SettingsSwitchRow(
+            title = "Строка поиска MARS AI в доке",
+            description = "Поисковая строка Lawnchair внизу экрана",
             checked = uiState.showDockSearch,
             onCheckedChange = { viewModel.updateShowDockSearch(it) }
         )
 
+        // Home Grid
         SettingsOptionRow(
-            title = "Сетка главного экрана",
+            title = "Сетка рабочего стола",
             description = "Количество колонок на рабочем столе"
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -156,7 +219,7 @@ fun SettingsScreen(
                             text = "${cols}x5",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isSelected) androidx.compose.ui.graphics.Color.White else MarsTheme.colors.textSecondary
+                            color = if (isSelected) Color.White else MarsTheme.colors.textSecondary
                         )
                     }
                 }
@@ -168,7 +231,7 @@ fun SettingsScreen(
 
         SettingsOptionRow(
             title = "Сетка меню приложений",
-            description = "Количество колонок в списке всех приложений"
+            description = "Количество колонок в списке приложений"
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(4, 5).forEach { cols ->
@@ -184,24 +247,24 @@ fun SettingsScreen(
                             text = "${cols}x",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isSelected) androidx.compose.ui.graphics.Color.White else MarsTheme.colors.textSecondary
+                            color = if (isSelected) Color.White else MarsTheme.colors.textSecondary
                         )
                     }
                 }
             }
         }
 
-        // Section: Иконки и тема
-        SettingsSectionHeader(title = "ВНЕШНИЙ ВИД И ИКОНКИ")
+        // Section: Иконки и стиль
+        SettingsSectionHeader(title = "ФОРМА ИКОНОК")
 
         SettingsOptionRow(
-            title = "Форма иконок",
-            description = "Стиль скругления иконок"
+            title = "Стиль иконок",
+            description = "Форма скругления (Lawnchair / One UI)"
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(
-                    IconShape.SQUIRCLE to "One UI",
-                    IconShape.CIRCLE to "Pixel",
+                    IconShape.SQUIRCLE to "Сквиркл",
+                    IconShape.CIRCLE to "Круг",
                     IconShape.ROUNDED to "Квадрат"
                 ).forEach { (shape, name) ->
                     val isSelected = uiState.iconShape == shape
@@ -216,7 +279,7 @@ fun SettingsScreen(
                             text = name,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
-                            color = if (isSelected) androidx.compose.ui.graphics.Color.White else MarsTheme.colors.textSecondary
+                            color = if (isSelected) Color.White else MarsTheme.colors.textSecondary
                         )
                     }
                 }
@@ -225,7 +288,7 @@ fun SettingsScreen(
 
         SettingsSwitchRow(
             title = "Глубокий черный (AMOLED)",
-            description = "Экономия энергии на экранах OLED/AMOLED",
+            description = "Черный фон #000000 для экономии энергии",
             checked = uiState.isAmoled,
             onCheckedChange = { viewModel.updateAmoledMode(it) }
         )
@@ -269,7 +332,7 @@ fun SettingsScreen(
                 color = MarsTheme.colors.textSecondary
             )
             Text(
-                text = "Архитектура: Jetpack Compose • com.mars.launcher",
+                text = "Стиль Lawnchair + MARS AI • super-mars.ai.studio",
                 fontSize = 11.sp,
                 color = MarsTheme.colors.textTertiary,
                 modifier = Modifier.padding(top = 2.dp)
@@ -322,7 +385,7 @@ fun SettingsSwitchRow(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = androidx.compose.ui.graphics.Color.White,
+                checkedThumbColor = Color.White,
                 checkedTrackColor = MarsTheme.colors.accent,
                 uncheckedThumbColor = MarsTheme.colors.textSecondary,
                 uncheckedTrackColor = MarsTheme.colors.surfaceVariant

@@ -22,7 +22,9 @@ data class HomeUiState(
     val homeColumns: Int = 4,
     val iconShape: IconShape = IconShape.SQUIRCLE,
     val showDockSearch: Boolean = true,
+    val showClockWidget: Boolean = true,
     val isAmoled: Boolean = false,
     val selectedAppForDialog: AppInfo? = null,
+    val showClockWidgetDialog: Boolean = false,
     val showDesktopContextMenu: Boolean = false
 )

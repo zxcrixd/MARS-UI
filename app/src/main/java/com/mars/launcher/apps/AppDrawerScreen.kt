@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.mars.launcher.home.HomeUiState
 import com.mars.launcher.home.HomeViewModel
+import com.mars.launcher.home.LauncherScreenMode
 import com.mars.launcher.ui.components.MarsGridItem
 import com.mars.launcher.ui.components.MarsSearchBar
 import com.mars.launcher.ui.theme.MarsTheme
@@ -56,7 +58,7 @@ fun AppDrawerScreen(
             .background(MarsTheme.colors.background)
             .statusBarsPadding()
     ) {
-        // App Drawer Top Search Bar (Lawnchair / One UI style)
+        // App Drawer Top Search Bar with Direct Settings Button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -74,9 +76,18 @@ fun AppDrawerScreen(
             MarsSearchBar(
                 query = uiState.searchQuery,
                 onQueryChange = { viewModel.onSearchQueryChanged(it) },
-                placeholderText = "Поиск приложений...",
+                placeholderText = "Поиск или MARS AI...",
                 modifier = Modifier.weight(1f)
             )
+
+            // Direct Launcher Settings Gear Button
+            IconButton(onClick = { viewModel.setScreenMode(LauncherScreenMode.SETTINGS) }) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Настройки",
+                    tint = MarsTheme.colors.textSecondary
+                )
+            }
         }
 
         // App Grid Content
@@ -135,13 +146,15 @@ fun AppDrawerScreen(
         }
     }
 
-    // Native-style App Context Menu (Long-press)
+    // App Options Dialog (Add to Desktop, Info, Uninstall)
     uiState.selectedAppForDialog?.let { selectedApp ->
+        val isOnDesktop = uiState.desktopApps.any { it.packageName == selectedApp.packageName }
         AppOptionsDialog(
             app = selectedApp,
+            isOnDesktop = isOnDesktop,
             onDismiss = { viewModel.selectAppForOptions(null) },
-            onToggleFavorite = {
-                viewModel.toggleFavorite(selectedApp)
+            onToggleDesktop = {
+                viewModel.toggleDesktopApp(selectedApp)
                 viewModel.selectAppForOptions(null)
             },
             onOpenInfo = { viewModel.openAppDetails(selectedApp) },
@@ -153,8 +166,9 @@ fun AppDrawerScreen(
 @Composable
 fun AppOptionsDialog(
     app: AppInfo,
+    isOnDesktop: Boolean,
     onDismiss: () -> Unit,
-    onToggleFavorite: () -> Unit,
+    onToggleDesktop: () -> Unit,
     onOpenInfo: () -> Unit,
     onUninstall: () -> Unit
 ) {
@@ -166,7 +180,6 @@ fun AppOptionsDialog(
                 .background(MarsTheme.colors.surfaceVariant)
                 .padding(18.dp)
         ) {
-            // App Title Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(bottom = 12.dp)
@@ -188,23 +201,23 @@ fun AppOptionsDialog(
                 }
             }
 
-            // Option: Add / Remove from Home
+            // Option: Add / Remove from Desktop
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .clickable { onToggleFavorite() }
+                    .clickable { onToggleDesktop() }
                     .padding(vertical = 12.dp, horizontal = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = if (app.isFavorite) Icons.Default.Remove else Icons.Default.Add,
+                    imageVector = if (isOnDesktop) Icons.Default.Remove else Icons.Default.Add,
                     contentDescription = null,
                     tint = MarsTheme.colors.textPrimary,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    text = if (app.isFavorite) "Убрать с главного экрана" else "Добавить на главный экран",
+                    text = if (isOnDesktop) "Убрать с главного экрана" else "Добавить на главный экран",
                     color = MarsTheme.colors.textPrimary,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(start = 14.dp)

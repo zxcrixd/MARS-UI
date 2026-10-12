@@ -25,24 +25,25 @@ class HomeViewModel(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        // Observe applications
+        // Observe applications together with user's desktop & dock selections
         viewModelScope.launch {
             combine(
                 appRepository.apps,
+                preferences.desktopPackagesFlow,
+                preferences.dockPackagesFlow,
                 appRepository.isLoading,
                 appRepository.errorMessage
-            ) { apps, loading, error ->
-                Triple(apps, loading, error)
-            }.collect { (apps, loading, error) ->
+            ) { apps, desktopPkgs, dockPkgs, loading, error ->
+                val desktop = apps.filter { desktopPkgs.contains(it.packageName) }
+                val dock = apps.filter { dockPkgs.contains(it.packageName) }
+                Triple(apps, desktop to dock, loading to error)
+            }.collect { (apps, desktopAndDock, status) ->
+                val (desktop, dock) = desktopAndDock
+                val (loading, error) = status
                 _uiState.update { current ->
-                    val filtered = applySearchFilter(apps, current.searchQuery)
-                    val favorites = apps.filter { it.isFavorite }
-                    val dock = if (favorites.isNotEmpty()) favorites.take(5) else apps.take(5)
-                    val desktop = if (favorites.size > 5) favorites.drop(5) else apps.take(8)
-
                     current.copy(
                         allApps = apps,
-                        filteredApps = filtered,
+                        filteredApps = applySearchFilter(apps, current.searchQuery),
                         desktopApps = desktop,
                         dockApps = dock,
                         isLoading = loading,
@@ -53,6 +54,12 @@ class HomeViewModel(
         }
 
         // Observe preferences
+        viewModelScope.launch {
+            preferences.showClockWidgetFlow.collect { show ->
+                _uiState.update { it.copy(showClockWidget = show) }
+            }
+        }
+
         viewModelScope.launch {
             preferences.drawerColumnsFlow.collect { cols ->
                 _uiState.update { it.copy(drawerColumns = cols) }
@@ -121,7 +128,6 @@ class HomeViewModel(
                 it.copy(errorMessage = "Не удалось открыть ${app.label}: ${result.exceptionOrNull()?.message}")
             }
         } else {
-            // Close app drawer on successful launch
             _uiState.update {
                 it.copy(
                     screenMode = LauncherScreenMode.DESKTOP,
@@ -133,10 +139,35 @@ class HomeViewModel(
         }
     }
 
-    fun toggleFavorite(app: AppInfo) {
+    fun addToDesktop(app: AppInfo) {
         viewModelScope.launch {
-            preferences.toggleFavorite(app.packageName)
+            preferences.addToDesktop(app.packageName)
         }
+    }
+
+    fun removeFromDesktop(app: AppInfo) {
+        viewModelScope.launch {
+            preferences.removeFromDesktop(app.packageName)
+        }
+    }
+
+    fun toggleDesktopApp(app: AppInfo) {
+        val isCurrentlyOnDesktop = _uiState.value.desktopApps.any { it.packageName == app.packageName }
+        if (isCurrentlyOnDesktop) {
+            removeFromDesktop(app)
+        } else {
+            addToDesktop(app)
+        }
+    }
+
+    fun setShowClockWidget(show: Boolean) {
+        viewModelScope.launch {
+            preferences.setShowClockWidget(show)
+        }
+    }
+
+    fun toggleClockWidgetDialog(show: Boolean) {
+        _uiState.update { it.copy(showClockWidgetDialog = show) }
     }
 
     fun openAppDetails(app: AppInfo) {

@@ -1,8 +1,8 @@
 package com.mars.launcher.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -19,8 +19,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -30,33 +30,55 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mars.launcher.ui.theme.MarsTheme
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 /**
- * Modern pill-shaped search bar similar to Lawnchair, Pixel Launcher, and One UI.
+ * Lawnchair-style search pill with direct super-mars.ai.studio integration.
  */
 @Composable
 fun MarsSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    placeholderText: String = "Поиск приложений..."
+    placeholderText: String = "Поиск или MARS AI...",
+    onAiSearch: ((String) -> Unit)? = null
 ) {
+    val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+
+    val launchMarsAiStudio: (String) -> Unit = { searchQuery ->
+        val url = if (searchQuery.trim().isNotEmpty()) {
+            val encoded = URLEncoder.encode(searchQuery.trim(), StandardCharsets.UTF_8.toString())
+            "https://super-mars.ai.studio/?q=$encoded"
+        } else {
+            "https://super-mars.ai.studio"
+        }
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (_: Exception) {}
+        onAiSearch?.invoke(searchQuery)
+    }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(50.dp)
+            .height(52.dp)
             .clip(CircleShape)
-            .background(Color(0x2AFFFFFF))
-            .padding(horizontal = 16.dp),
+            .background(Color(0x331F212D))
+            .padding(horizontal = 14.dp),
         contentAlignment = Alignment.CenterStart
     ) {
         Row(
@@ -70,7 +92,7 @@ fun MarsSearchBar(
                 modifier = Modifier.size(20.dp)
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
             Box(modifier = Modifier.weight(1f)) {
                 if (query.isEmpty()) {
@@ -78,7 +100,7 @@ fun MarsSearchBar(
                         text = placeholderText,
                         style = TextStyle(
                             fontFamily = FontFamily.SansSerif,
-                            fontSize = 15.sp,
+                            fontSize = 14.sp,
                             color = MarsTheme.colors.textTertiary
                         )
                     )
@@ -90,13 +112,16 @@ fun MarsSearchBar(
                     singleLine = true,
                     textStyle = TextStyle(
                         fontFamily = FontFamily.SansSerif,
-                        fontSize = 15.sp,
+                        fontSize = 14.sp,
                         color = MarsTheme.colors.textPrimary
                     ),
                     cursorBrush = SolidColor(MarsTheme.colors.accent),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = {
                         focusManager.clearFocus()
+                        if (query.trim().isNotEmpty()) {
+                            launchMarsAiStudio(query)
+                        }
                     }),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -108,15 +133,34 @@ fun MarsSearchBar(
                     contentDescription = "Очистить",
                     tint = MarsTheme.colors.textSecondary,
                     modifier = Modifier
-                        .size(20.dp)
+                        .size(18.dp)
                         .clickable { onQueryChange("") }
                 )
-            } else {
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            // Direct super-mars.ai.studio button inside the search pill
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0x33E53935))
+                    .clickable { launchMarsAiStudio(query) }
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(
-                    imageVector = Icons.Default.Mic,
-                    contentDescription = "Голосовой поиск",
-                    tint = MarsTheme.colors.textSecondary,
-                    modifier = Modifier.size(20.dp)
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = "MARS AI",
+                    tint = MarsTheme.colors.accent,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "AI Studio",
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.SansSerif,
+                    fontWeight = FontWeight.Bold,
+                    color = MarsTheme.colors.accent
                 )
             }
         }
